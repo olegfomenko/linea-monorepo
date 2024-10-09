@@ -98,8 +98,6 @@ github.com/consensys/compress v0.2.5 h1:gJr1hKzbOD36JFsF1AN8lfXz1yevnJi1YolffY19
 github.com/consensys/compress v0.2.5/go.mod h1:pyM+ZXiNUh7/0+AUjUf9RKUM6vSH7T/fsn5LLS0j1Tk=
 github.com/consensys/gnark v0.11.1-0.20240910135928-e8cb61d0be1d h1:TmNupI1+K5/LOg1K0kqEhRf5sZwRtxXah5iTHQ6fJvw=
 github.com/consensys/gnark v0.11.1-0.20240910135928-e8cb61d0be1d/go.mod h1:f9CH911SPCrbSZp5z9LYzJ3rZvI7mOUzzf48lCZO/5o=
-github.com/consensys/gnark-crypto v0.14.1-0.20240909204211-78a6dc12799c h1:fkRJCyz4EBjDNhiNTyyyEJBEW7RsFzmDVd/ot4jtSrE=
-github.com/consensys/gnark-crypto v0.14.1-0.20240909204211-78a6dc12799c/go.mod h1:AL8vs/7MyZ0P93tcNDkUWVwf2rWLUGFUP/1iqiF7h4E=
 github.com/consensys/go-corset v0.0.0-20240920085445-2d0aad43bfbd h1:yNUrtBL6JEGq9lpTHyjTZ5i3VGhqkKhoYokTVnt0Iqs=
 github.com/consensys/go-corset v0.0.0-20240920085445-2d0aad43bfbd/go.mod h1:J64guTfpmfXl4Yk2D7lsWdYg0ilP+N8JWPudP7+sZpA=
 github.com/coreos/go-semver v0.3.0/go.mod h1:nnelYz7RCh+5ahJtPPxZlU+153eP4D4r3EedlOD2RNk=
@@ -359,6 +357,8 @@ github.com/nxadm/tail v1.4.11 h1:8feyoE3OzPrcshW5/MJ4sGESc5cqmGkGCWlco4l0bqY=
 github.com/nxadm/tail v1.4.11/go.mod h1:OTaG3NK980DZzxbRq6lEuzgU+mug70nY11sMd4JXXHc=
 github.com/olekukonko/tablewriter v0.0.5 h1:P2Ga83D34wi1o9J6Wh1mRuqd4mF/x/lgBS7N7AbDhec=
 github.com/olekukonko/tablewriter v0.0.5/go.mod h1:hPp6KlRPjbx+hW8ykQs1w3UBbZlj6HuIJcUGPhkA7kY=
+github.com/omegatymbjiep/gnark-crypto v0.0.0-20241009130047-11b59cd28c56 h1:pAeI9f7Nv/sOdg8ZCNiYKi9wifoi441nU7dkNHNAKNM=
+github.com/omegatymbjiep/gnark-crypto v0.0.0-20241009130047-11b59cd28c56/go.mod h1:AL8vs/7MyZ0P93tcNDkUWVwf2rWLUGFUP/1iqiF7h4E=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.12.1/go.mod h1:zj2OWP4+oCPe1qIXoGWkgMRwljMUYCdkwsT2108oapk=
 github.com/onsi/ginkgo v1.14.0 h1:2mOpI4JVVPBN+WQRa0WKH2eXR+Ey+uK4n7Zj0aYpIQA=
