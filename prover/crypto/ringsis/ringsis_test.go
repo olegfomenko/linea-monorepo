@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/consensys/gnark-crypto/ecc/bls12-377/fr"
-	"github.com/consensys/gnark-crypto/ecc/bls12-377/fr/fft"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/consensys/linea-monorepo/prover/crypto/mimc"
 	"github.com/consensys/linea-monorepo/prover/maths/common/poly"
 	"github.com/consensys/linea-monorepo/prover/maths/common/smartvectors"
 	"github.com/consensys/linea-monorepo/prover/maths/common/vector"
+	"github.com/consensys/linea-monorepo/prover/maths/fft"
 	"github.com/consensys/linea-monorepo/prover/maths/field"
 	"github.com/consensys/linea-monorepo/prover/utils"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 var testCasesKey = []struct {
@@ -290,7 +290,7 @@ func TestTransveralHashFromLimbs(t *testing.T) {
 
 					transposed := make([][]field.Element, 16)
 					for i := range transposed {
-						transposed[i] = make([]fr.Element, 4)
+						transposed[i] = make([]field.Element, 4)
 						for j := range transposed[i] {
 							transposed[i][j] = inputs[j].Get(i)
 						}
