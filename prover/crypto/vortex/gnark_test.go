@@ -11,7 +11,6 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark-crypto/ecc/bls12-377/fr"
-	"github.com/consensys/gnark-crypto/ecc/bls12-377/fr/fft"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/scs"
 	"github.com/consensys/gnark/std/hash"
@@ -24,6 +23,7 @@ import (
 	"github.com/consensys/linea-monorepo/prover/utils"
 	"github.com/consensys/linea-monorepo/prover/utils/types"
 	"github.com/stretchr/testify/require"
+	"github.com/consensys/linea-monorepo/prover/maths/fft"
 )
 
 // ------------------------------------------------------------
@@ -61,7 +61,7 @@ func (circuit *ComputeLagrangeCircuit) Define(api frontend.API) error {
 func TestComputeLagrangeCircuit(t *testing.T) {
 
 	s := 16
-	d := fft.NewDomain(uint64(s))
+	d := fft.NewDomain(s)
 	var zeta fr.Element
 	zeta.SetRandom()
 
@@ -126,7 +126,7 @@ func (circuit *FFTInverseCircuit) Define(api frontend.API) error {
 func TestFFTInverseCircuit(t *testing.T) {
 
 	s := 16
-	d := fft.NewDomain(uint64(s))
+	d := fft.NewDomain(s)
 
 	// prepare witness
 	p := make([]fr.Element, s)
@@ -188,7 +188,7 @@ func TestAssertIsCodeWord(t *testing.T) {
 
 	// generate witness
 	size := 2048
-	d := fft.NewDomain(uint64(size))
+	d := fft.NewDomain(size)
 	rate := 2
 	p := make([]fr.Element, size)
 	for i := 0; i < (size / rate); i++ {
@@ -262,7 +262,7 @@ func TestInterpolateCircuit(t *testing.T) {
 		r.Add(&r, &p[len(p)-1-i])
 	}
 
-	d := fft.NewDomain(uint64(size))
+	d := fft.NewDomain(size)
 	d.FFT(p, fft.DIF)
 	fft.BitReverse(p)
 
@@ -366,8 +366,7 @@ func TestGnarkVortexNCommitmentsWithMerkleNoSis(t *testing.T) {
 	proof, randomCoin, x, ys, entryList, commitments := getProofVortexNCommitmentsWithMerkleNoSis(t, nCommitments, nPolys, polySize, blowUpFactor)
 
 	rsSize := blowUpFactor * polySize
-	rsDomainSize := uint64(rsSize)
-	rsDomain := fft.NewDomain(rsDomainSize)
+	rsDomain := fft.NewDomain(rsSize)
 	var witness VerifyOpeningCircuitMerkleTree
 	witness.Proof.RsDomain = rsDomain
 	witness.Proof.Rate = uint64(blowUpFactor)

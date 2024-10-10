@@ -6,7 +6,6 @@ import (
 	"math/bits"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-377/fr"
-	"github.com/consensys/gnark-crypto/ecc/bls12-377/fr/fft"
 	"github.com/consensys/gnark/constraint/solver"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/hash"
@@ -16,6 +15,7 @@ import (
 	"github.com/consensys/linea-monorepo/prover/crypto/state-management/smt"
 	"github.com/consensys/linea-monorepo/prover/utils"
 	"github.com/sirupsen/logrus"
+	"github.com/consensys/linea-monorepo/prover/maths/fft"
 )
 
 var (
@@ -31,7 +31,7 @@ func init() {
 func FFTInverseBLS12377(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
 
 	// TODO store this somewhere (global variable or something, shouldn't regenerate it at each call)
-	d := fft.NewDomain(uint64(len(inputs)), fft.WithoutPrecompute())
+	d := fft.NewDomain(len(inputs))
 
 	v := make([]fr.Element, len(inputs))
 	for i := 0; i < len(inputs); i++ {
