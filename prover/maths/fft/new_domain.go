@@ -2,6 +2,9 @@ package fft
 
 import (
 	"math/big"
+	"sync"
+
+	"github.com/consensys/gnark-crypto/ecc/bls12-377/fr/fft"
 
 	"github.com/consensys/linea-monorepo/prover/maths/field"
 	"github.com/consensys/linea-monorepo/prover/utils"
@@ -61,6 +64,36 @@ func (dom *Domain) WithCustomCoset(r, numcoset int) *Domain {
 		dom.CosetTableInv,
 		dom.CosetTableReversed,
 		dom.CosetTableInvReversed = GetCoset(n, r, numcoset)
+
+	return dom
+}
+
+/*
+WithShift sets the FrMultiplicativeGen of the domain.
+Default is generator of the largest 2-adic subgroup.
+
+And equipes the current domain with a custom coset generated
+with shifted FrMultiplicativeGen.
+*/
+func (dom *Domain) WithShift(shift field.Element) *Domain {
+	dom.FrMultiplicativeGen.Set(&shift)
+	dom.FrMultiplicativeGenInv.Inverse(&dom.FrMultiplicativeGen)
+
+	dom.CosetTable = make([]field.Element, dom.Cardinality)
+	dom.CosetTableInv = make([]field.Element, dom.Cardinality)
+
+	var wg sync.WaitGroup
+
+	expTable := func(sqrt field.Element, t []field.Element) {
+		fft.BuildExpTable(sqrt, t)
+		wg.Done()
+	}
+
+	wg.Add(2)
+	go expTable(dom.FrMultiplicativeGen, dom.CosetTable)
+	go expTable(dom.FrMultiplicativeGenInv, dom.CosetTableInv)
+
+	wg.Wait()
 
 	return dom
 }
