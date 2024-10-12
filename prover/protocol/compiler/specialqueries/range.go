@@ -26,20 +26,16 @@ func RangeProof(comp *wizard.CompiledIOP) {
 	numRounds := comp.NumRounds()
 
 	for roundID := 0; roundID < numRounds; roundID++ {
-		queries := comp.QueriesNoParams.AllKeysAt(roundID)
+		queries := comp.QueriesNoParams.AllUnignoredKeysAt(roundID)
 		for _, qName := range queries {
-
 			q, ok := comp.QueriesNoParams.Data(qName).(query.Range)
-
 			// Not a range, don't care
 			if !ok {
 				continue
 			}
 
-			// Skip if it was already compiled, else mark it as compiled
-			if comp.QueriesNoParams.MarkAsIgnored(qName) {
-				continue
-			}
+			// Mark it as compiled
+			comp.QueriesNoParams.MarkAsIgnored(qName)
 
 			/*
 				Get the range poly

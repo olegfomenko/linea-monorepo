@@ -30,7 +30,7 @@ func CompileMiMC(comp *wizard.CompiledIOP) {
 			continue
 		}
 
-		// else mark it as ignored
+		// Mark it as ignored
 		comp.QueriesNoParams.MarkAsIgnored(id)
 
 		mimcQueries = append(mimcQueries, qMiMC)

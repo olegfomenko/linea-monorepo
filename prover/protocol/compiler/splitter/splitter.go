@@ -163,14 +163,8 @@ func Compile(comp *wizard.CompiledIOP, size int) {
 		subvectors is ensured by one or more local constraints at the junction
 	*/
 	for round := 0; round < numRound; round++ {
-		qNames := comp.QueriesNoParams.AllKeysAt(round)
+		qNames := comp.QueriesNoParams.AllUnignoredKeysAt(round)
 		for _, qName := range qNames {
-
-			if comp.QueriesNoParams.IsIgnored(qName) {
-				// Skip ignored constraints
-				continue
-			}
-
 			q_ := comp.QueriesNoParams.Data(qName)
 			switch q := q_.(type) {
 			case query.LocalConstraint:
@@ -187,14 +181,8 @@ func Compile(comp *wizard.CompiledIOP, size int) {
 		Replace the local evaluation constraints, by one over
 	*/
 	for round := 0; round < numRound; round++ {
-		qNames := comp.QueriesParams.AllKeysAt(round)
+		qNames := comp.QueriesParams.AllUnignoredKeysAt(round)
 		for _, qName := range qNames {
-
-			if comp.QueriesParams.IsIgnored(qName) {
-				// Skip ignored constraints
-				continue
-			}
-
 			q_ := comp.QueriesParams.Data(qName)
 			switch q := q_.(type) {
 			case query.LocalOpening:
