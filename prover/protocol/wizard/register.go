@@ -155,12 +155,15 @@ func (s *ByRoundRegister[ID, DATA]) AllUnignoredKeys() []ID {
 Marks an entry as compiled. Panic if the key is missing from the register.
 Returns true if the item was already ignored.
 */
-func (r *ByRoundRegister[ID, DATA]) MarkAsIgnored(id ID) (exist bool) {
+func (r *ByRoundRegister[ID, DATA]) MarkAsIgnored(id ID) bool {
 	round := r.byRoundsIndex.MustGet(id)
-	if exist = r.byRoundsUnignored[round].Exists(id); exist {
+
+	ignored := !r.byRoundsUnignored[round].Exists(id)
+	if !ignored {
 		r.byRoundsUnignored[round].MustDel(id)
 	}
-	return
+
+	return ignored
 }
 
 /*
