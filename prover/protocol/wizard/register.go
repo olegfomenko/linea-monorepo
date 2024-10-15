@@ -46,11 +46,7 @@ Returns the list of all the keys ever. The result is returned in
 Deterministic order.
 */
 func (r *ByRoundRegister[ID, DATA]) AllKeys() []ID {
-	res := []ID{}
-	for i := 0; i < len(r.byRounds); i++ {
-		res = append(res, r.byRounds[i].ListAllKeys()...)
-	}
-	return res
+	return r.byRoundsIndex.ListAllKeys()
 }
 
 /*
@@ -64,6 +60,17 @@ func (r *ByRoundRegister[ID, DATA]) AllKeysAt(round int) []ID {
 	// However, it should not happen for coins.
 	r.ReserveFor(round + 1)
 	return r.byRounds[round].ListAllKeys()
+}
+
+/*
+Returns all the keys that are not marked as ignored in the structure
+*/
+func (r *ByRoundRegister[ID, DATA]) AllUnignoredKeys() []ID {
+	res := make([]ID, 0, r.byRoundsIndex.Size())
+	for i := 0; i < len(r.byRounds); i++ {
+		res = append(res, r.byRoundsUnignored[i].ListAll()...)
+	}
+	return res
 }
 
 /*
@@ -138,17 +145,6 @@ func (r *ByRoundRegister[ID, DATA]) ReserveFor(newLen int) {
 		r.byRounds = append(r.byRounds, collection.NewMapping[ID, DATA]())
 		r.byRoundsUnignored = append(r.byRoundsUnignored, collection.NewSet[ID]())
 	}
-}
-
-/*
-Returns all the keys that are not marked as ignored in the structure
-*/
-func (s *ByRoundRegister[ID, DATA]) AllUnignoredKeys() []ID {
-	res := []ID{}
-	for r := 0; r < len(s.byRounds); r++ {
-		res = append(res, s.byRoundsUnignored[r].ListAll()...)
-	}
-	return res
 }
 
 /*

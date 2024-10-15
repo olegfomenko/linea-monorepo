@@ -19,7 +19,7 @@ func NewSet[K comparable]() Set[K] {
 
 // Returns the list of all the keys
 func (kv *Set[K]) ListAll() []K {
-	var res []K
+	var res []K = make([]K, 0, len(kv.inner))
 	for k := range kv.inner {
 		res = append(res, k)
 	}
@@ -27,7 +27,7 @@ func (kv *Set[K]) ListAll() []K {
 }
 
 // Returns `true` if the entry exists
-func (kv Set[K]) Exists(ks ...K) bool {
+func (kv *Set[K]) Exists(ks ...K) bool {
 	for _, k := range ks {
 		_, found := kv.inner[k]
 		if !found {
@@ -38,7 +38,7 @@ func (kv Set[K]) Exists(ks ...K) bool {
 }
 
 // Panic if the given entry does not exists
-func (kv Set[K]) MustExists(keys ...K) {
+func (kv *Set[K]) MustExists(keys ...K) {
 	var missingListString error
 	ok := true
 
