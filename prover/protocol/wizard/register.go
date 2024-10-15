@@ -20,7 +20,7 @@ type ByRoundRegister[ID comparable, DATA any] struct {
 	// All the active (unignored) IDs for a given round
 	byRoundsActive []collection.DynVec[ID]
 	// Gives the position in byRoundsActive of an entry by ID
-	byRoundsActiveIndex collection.Mapping[ID, uint]
+	byRoundsActiveIndex collection.Mapping[ID, int]
 }
 
 /*
@@ -32,7 +32,7 @@ func NewRegister[ID comparable, DATA any]() ByRoundRegister[ID, DATA] {
 		byRounds:            collection.NewVecVec[ID](),
 		byRoundsIndex:       collection.NewMapping[ID, int](),
 		byRoundsActive:      []collection.DynVec[ID]{},
-		byRoundsActiveIndex: collection.NewMapping[ID, uint](),
+		byRoundsActiveIndex: collection.NewMapping[ID, int](),
 	}
 }
 
