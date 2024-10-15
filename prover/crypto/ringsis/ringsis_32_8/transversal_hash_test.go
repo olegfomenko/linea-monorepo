@@ -7,14 +7,14 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/consensys/gnark-crypto/ecc/bls12-377/fr/fft"
+	"github.com/stretchr/testify/require"
+
 	"github.com/consensys/linea-monorepo/prover/crypto/ringsis"
 	"github.com/consensys/linea-monorepo/prover/crypto/ringsis/ringsis_32_8"
 	"github.com/consensys/linea-monorepo/prover/maths/common/smartvectors"
 	"github.com/consensys/linea-monorepo/prover/maths/common/vector"
-	wfft "github.com/consensys/linea-monorepo/prover/maths/fft"
+	"github.com/consensys/linea-monorepo/prover/maths/fft"
 	"github.com/consensys/linea-monorepo/prover/maths/field"
-	"github.com/stretchr/testify/require"
 )
 
 // randomConstRow generates a random constant smart-vector
@@ -64,7 +64,7 @@ func TestSmartVectorTransversalSisHash(t *testing.T) {
 		numReps   = 64
 		numCols   = 16
 		rng       = rand.New(rand.NewSource(786868))
-		domain    = fft.NewDomain(32, fft.WithShift(wfft.GetOmega(32*2)))
+		domain    = fft.NewDomain(32).WithShift(fft.GetOmega(32 * 2))
 		twiddles  = ringsis_32_8.PrecomputeTwiddlesCoset(domain.Generator, domain.FrMultiplicativeGen)
 		params    = ringsis.Params{LogTwoBound: 8, LogTwoDegree: 5}
 		testCases = [][]smartvectors.SmartVector{

@@ -5,15 +5,15 @@ package ringsis_64_16
 import (
 	"testing"
 
-	"github.com/consensys/gnark-crypto/ecc/bls12-377/fr/fft"
 	"github.com/consensys/linea-monorepo/prover/maths/field"
 	"github.com/stretchr/testify/assert"
+	"github.com/consensys/linea-monorepo/prover/maths/fft"
 )
 
 func TestPartialFFT(t *testing.T) {
 
 	var (
-		domain   = fft.NewDomain(64)
+		domain   = fft.NewDomain(64).WithCoset()
 		twiddles = PrecomputeTwiddlesCoset(domain.Generator, domain.FrMultiplicativeGen)
 	)
 

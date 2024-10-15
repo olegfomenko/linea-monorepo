@@ -1,7 +1,6 @@
 package vortex
 
 import (
-	"github.com/consensys/gnark-crypto/ecc/bls12-377/fr/fft"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/hash"
 	"github.com/consensys/linea-monorepo/prover/crypto/state-management/smt"
@@ -12,6 +11,7 @@ import (
 	"github.com/consensys/linea-monorepo/prover/protocol/ifaces"
 	"github.com/consensys/linea-monorepo/prover/protocol/wizard"
 	"github.com/consensys/linea-monorepo/prover/utils"
+	"github.com/consensys/linea-monorepo/prover/maths/fft"
 )
 
 func (ctx *Ctx) GnarkVerify(api frontend.API, vr *wizard.WizardVerifierCircuit) {
@@ -51,7 +51,7 @@ func (ctx *Ctx) GnarkVerify(api frontend.API, vr *wizard.WizardVerifierCircuit) 
 	// Collect the linear combination
 	proof := vortex.GProof{}
 	proof.Rate = uint64(ctx.BlowUpFactor)
-	proof.RsDomain = fft.NewDomain(uint64(ctx.NumEncodedCols()))
+	proof.RsDomain = fft.NewDomain(ctx.NumEncodedCols())
 	proof.LinearCombination = vr.GetColumn(ctx.LinCombName())
 
 	// Collect the random entry List and the random coin

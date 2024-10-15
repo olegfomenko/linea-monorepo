@@ -5,23 +5,23 @@ package ringsis_64_8
 import (
 	"runtime"
 
-	"github.com/consensys/gnark-crypto/ecc/bls12-377/fr/fft"
 	"github.com/consensys/linea-monorepo/prover/maths/common/smartvectors"
 	"github.com/consensys/linea-monorepo/prover/maths/common/vector"
+	"github.com/consensys/linea-monorepo/prover/maths/fft"
 	"github.com/consensys/linea-monorepo/prover/maths/field"
 	"github.com/consensys/linea-monorepo/prover/utils"
 	"github.com/consensys/linea-monorepo/prover/utils/parallel"
 )
 
 func TransversalHash(
-	// the Ag for ring-sis
+// the Ag for ring-sis
 	ag [][]field.Element,
-	// A non-transposed list of columns
-	// All of the same length
+// A non-transposed list of columns
+// All of the same length
 	pols []smartvectors.SmartVector,
-	// The precomputed twiddle cosets for the forward FFT
+// The precomputed twiddle cosets for the forward FFT
 	twiddleCosets []field.Element,
-	// The domain for the final inverse-FFT
+// The domain for the final inverse-FFT
 	domain *fft.Domain,
 ) []field.Element {
 
