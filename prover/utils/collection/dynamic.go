@@ -53,7 +53,7 @@ func (v *DynVec[V]) Append(value V) uint {
 
 func (v *DynVec[V]) MustRemove(i uint) {
 	if i > v.sz {
-		utils.Panic("Index does not exist in DynVec")
+		utils.Panic("Index %d does not exist in DynVec (len = %d)", i, v.sz)
 	}
 
 	treeLeftWithPos, treeRight := split(v.root, i)
@@ -68,7 +68,7 @@ func (v *DynVec[V]) MustRemove(i uint) {
 
 func (v *DynVec[V]) MustGet(i uint) V {
 	if i > v.sz {
-		utils.Panic("Index does not exist in DynVec")
+		utils.Panic("Index %d does not exist in DynVec (len = %d)", i, v.sz)
 	}
 
 	return get(v.root, i)
