@@ -8,7 +8,7 @@ require (
 	github.com/consensys/bavard v0.1.22
 	github.com/consensys/compress v0.2.5
 	github.com/consensys/gnark v0.11.1-0.20240910135928-e8cb61d0be1d
-	github.com/consensys/gnark-crypto v0.14.1-0.20240909204211-78a6dc12799c
+	github.com/consensys/gnark-crypto v0.14.1-0.20241015191638-6f6fded2379d
 	github.com/consensys/go-corset v0.0.0-20240920085445-2d0aad43bfbd
 	github.com/crate-crypto/go-kzg-4844 v1.1.0
 	github.com/dlclark/regexp2 v1.11.2
@@ -115,4 +115,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/consensys/gnark-crypto => github.com/olegfomenko/gnark-crypto v0.14.1-rc1
+//replace github.com/consensys/gnark-crypto => github.com/olegfomenko/gnark-crypto v0.14.1-rc1
