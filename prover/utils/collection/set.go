@@ -12,8 +12,12 @@ func NewSet[K comparable]() Set[K] {
 	}
 }
 
+func (kv *Set[K]) Size() int {
+	return len(kv.inner)
+}
+
 // Returns `true` if the entry exists
-func (kv Set[K]) Exists(ks ...K) bool {
+func (kv *Set[K]) Exists(ks ...K) bool {
 	for _, k := range ks {
 		_, found := kv.inner[k]
 		if !found {

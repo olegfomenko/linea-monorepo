@@ -207,7 +207,7 @@ func (r Inclusion) Check(run ifaces.Runtime) error {
 
 		rand := rowLinComb(alpha, row, included)
 		if _, ok := inclusionSet[rand]; !ok {
-			notFoundRow := []string{}
+			notFoundRow := make([]string, 0, len(included))
 			for c := range included {
 				x := included[c].Get(row)
 				notFoundRow = append(notFoundRow, fmt.Sprintf("%v=%v", r.Included[c].GetColID(), x.Text(16)))

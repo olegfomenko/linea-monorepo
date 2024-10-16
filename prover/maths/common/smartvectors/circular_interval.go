@@ -268,7 +268,7 @@ func smallestCoverInterval(intervals []circularInterval) circularInterval {
 	// into disjoints buckets. Thereafter, we take the complements of the
 	// largest gap between buckets as our result.
 	sort.Slice(intervals, func(i, j int) bool { return intervals[i].start() <= intervals[j].start() })
-	overlaps := []circularInterval{}
+	overlaps := make([]circularInterval, 0, len(intervals))
 
 	// Then we group the intervals whose union is still an interval. Since
 	// the intervals are now sorted by their "start" argument, it suffices

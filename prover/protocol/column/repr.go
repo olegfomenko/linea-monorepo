@@ -134,7 +134,7 @@ func appendNodeToUpstream(upstream string, node ifaces.Column) string {
 }
 
 func prependNodeToDownstream(node ifaces.Column, downstream []string) []string {
-	res := []string{}
+	res := make([]string, 0, len(downstream))
 	nodeRepr := getNodeRepr(node)
 	for _, d := range downstream {
 		newbranch := fmt.Sprintf("%v_%v", nodeRepr, d)

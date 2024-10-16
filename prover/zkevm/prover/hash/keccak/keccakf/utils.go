@@ -252,7 +252,7 @@ func numRows(numKeccakf int) int {
 
 // derive column names
 func deriveName(mainName string, ids ...int) ifaces.ColID {
-	idStr := []string{}
+	idStr := make([]string, 0, len(ids))
 	for i := range ids {
 		idStr = append(idStr, strconv.Itoa(ids[i]))
 	}

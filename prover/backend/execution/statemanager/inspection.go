@@ -9,20 +9,35 @@ import (
 
 // Inspect the traces and check if they are consistent with what the spec allows
 func CheckTraces(traces []DecodedTrace) (oldStateRootHash Digest, newStateRootHash Digest, err error) {
-
-	var prevAddress Address
-
 	if len(traces) == 0 {
 		utils.Panic("no state-manager traces, that's impossible.")
 	}
 
-	// Dispatch the traces to separate traces relating to different accounts
-	traceByAccount := [][]DecodedTrace{}
-	traceWs := []DecodedTrace{}
-	digestErr := Digest{}
+	var prevAddress Address
+	var digestErr Digest
 
-	// Traces for the same account should be continuous
-	alreadyFoundAcc := map[Address]struct{}{}
+	accountTraceEnd := make(map[Address]int)
+
+	for i, trace := range traces {
+		address, err := trace.GetRelatedAccount()
+		if err != nil {
+			return digestErr, digestErr, err
+		}
+
+		// Traces for the same account should be continuous
+		// Ensures we have at most one segment for each address
+		if _, ok := accountTraceEnd[address]; ok && address != prevAddress && i > 0 {
+			return digestErr, digestErr, fmt.Errorf("two segments for address %v", address.Hex())
+		}
+
+		accountTraceEnd[address] = i
+		prevAddress = address
+	}
+
+	// Dispatch the traces to separate traces relating to different accounts
+
+	traceByAccount := make([][]DecodedTrace, 0, len(accountTraceEnd))
+	traceWs := make([]DecodedTrace, 0, len(traces))
 
 	// Collect all the traces in their respective slices. We also check that all
 	// checks done relative to an account have been done contiguously.
@@ -37,19 +52,13 @@ func CheckTraces(traces []DecodedTrace) (oldStateRootHash Digest, newStateRootHa
 			return digestErr, digestErr, err
 		}
 
-		// Ensures we have at most one segment for each address
-		if _, ok := alreadyFoundAcc[address]; ok && address != prevAddress && i > 0 {
-			return digestErr, digestErr, fmt.Errorf("two segments for address %v", address.Hex())
-		}
-
 		// If the account changed, push into a new slice
 		if i == 0 || address != prevAddress {
-			traceByAccount = append(traceByAccount, []DecodedTrace{})
+			traceByAccount = append(traceByAccount, make([]DecodedTrace, 0, accountTraceEnd[address]-i+1))
 		}
 
 		last := len(traceByAccount) - 1
 		traceByAccount[last] = append(traceByAccount[last], trace)
-		alreadyFoundAcc[address] = struct{}{}
 		prevAddress = address
 	}
 
