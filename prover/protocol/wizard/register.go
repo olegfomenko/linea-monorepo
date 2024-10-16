@@ -17,10 +17,8 @@ type ByRoundRegister[ID comparable, DATA any] struct {
 	byRounds collection.VecVec[ID]
 	// Gives the round ID of an entry
 	byRoundsIndex collection.Mapping[ID, int]
-	// All the active (unignored) IDs for a given round
-	byRoundsActive []collection.DynVec[ID]
-	// Gives the position in byRoundsActive of an entry by ID
-	byRoundsActiveIndex collection.Mapping[ID, int]
+	// All active (unignored) IDs in history order by rounds
+	byRoundsActive []collection.LinkedSet[ID]
 }
 
 /*
@@ -28,11 +26,10 @@ Construct a new round register
 */
 func NewRegister[ID comparable, DATA any]() ByRoundRegister[ID, DATA] {
 	return ByRoundRegister[ID, DATA]{
-		mapping:             collection.NewMapping[ID, DATA](),
-		byRounds:            collection.NewVecVec[ID](),
-		byRoundsIndex:       collection.NewMapping[ID, int](),
-		byRoundsActive:      []collection.DynVec[ID]{},
-		byRoundsActiveIndex: collection.NewMapping[ID, int](),
+		mapping:        collection.NewMapping[ID, DATA](),
+		byRounds:       collection.NewVecVec[ID](),
+		byRoundsIndex:  collection.NewMapping[ID, int](),
+		byRoundsActive: []collection.LinkedSet[ID]{},
 	}
 }
 
@@ -45,7 +42,7 @@ func (r *ByRoundRegister[ID, DATA]) AddToRound(round int, id ID, data DATA) {
 	r.mapping.InsertNew(id, data)
 	r.byRounds.AppendToInner(round, id)
 	r.byRoundsIndex.InsertNew(id, round)
-	r.byRoundsActiveIndex.InsertNew(id, r.byRoundsActive[round].Append(id))
+	r.byRoundsActive[round].MustAppend(id)
 }
 
 /*
@@ -157,7 +154,7 @@ func (r *ByRoundRegister[ID, DATA]) ReserveFor(newLen int) {
 	}
 
 	for len(r.byRoundsActive) < newLen {
-		r.byRoundsActive = append(r.byRoundsActive, collection.NewDynVec[ID]())
+		r.byRoundsActive = append(r.byRoundsActive, collection.NewLinkedSet[ID]())
 	}
 }
 
@@ -167,14 +164,7 @@ Returns true if the item was already ignored.
 */
 func (r *ByRoundRegister[ID, DATA]) MarkAsIgnored(id ID) bool {
 	round := r.byRoundsIndex.MustGet(id)
-
-	index, active := r.byRoundsActiveIndex.TryGet(id)
-	if !active {
-		return true
-	}
-
-	r.byRoundsActive[round].MustRemove(index)
-	r.byRoundsActiveIndex.Del(id)
+	r.byRoundsActive[round].MustRemove(id)
 	return false
 }
 
@@ -183,5 +173,6 @@ Returns if the entry is ignored. Panics if the entry is missing from the
 map.
 */
 func (r *ByRoundRegister[ID, DATA]) IsIgnored(id ID) bool {
-	return r.byRoundsActiveIndex.Exists(id)
+	round := r.byRoundsIndex.MustGet(id)
+	return r.byRoundsActive[round].Exists(id)
 }
