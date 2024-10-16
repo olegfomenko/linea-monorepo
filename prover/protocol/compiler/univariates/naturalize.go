@@ -48,12 +48,7 @@ func Naturalize(comp *wizard.CompiledIOP) {
 
 	// The compilation process is applied separately for each query
 	for roundID := 0; roundID < comp.NumRounds(); roundID++ {
-		for _, qName := range comp.QueriesParams.AllKeysAt(roundID) {
-
-			if comp.QueriesParams.IsIgnored(qName) {
-				continue
-			}
-
+		for _, qName := range comp.QueriesParams.AllUnignoredKeysAt(roundID) {
 			q_ := comp.QueriesParams.Data(qName)
 			if _, ok := q_.(query.UnivariateEval); !ok {
 				/*

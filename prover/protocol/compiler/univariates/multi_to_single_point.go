@@ -150,12 +150,7 @@ func createMptsCtx(comp *wizard.CompiledIOP, targetSize int) mptsCtx {
 	queryCount := 0
 
 	// Scan the multivariate evaluatation
-	for _, qName := range comp.QueriesParams.AllKeys() {
-
-		if comp.QueriesParams.IsIgnored(qName) {
-			continue
-		}
-
+	for _, qName := range comp.QueriesParams.AllUnignoredKeys() {
 		q_ := comp.QueriesParams.Data(qName)
 		if _, ok := q_.(query.UnivariateEval); !ok {
 			/*
@@ -608,9 +603,9 @@ func (ctx mptsCtx) gnarkVerify(api frontend.API, c *wizard.WizardVerifierCircuit
 
 // collect all the alleged opening values in a map, so that we can utilize them later.
 func (ctx mptsCtx) getYsHs(
-// func that can be used to return the parameters of a given query
+	// func that can be used to return the parameters of a given query
 	getParam func(ifaces.QueryID) query.UnivariateEvalParams,
-// func that can be used to return the query's metadata given its name
+	// func that can be used to return the query's metadata given its name
 	getQuery func(ifaces.QueryID) query.UnivariateEval,
 
 ) (

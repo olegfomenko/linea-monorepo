@@ -11,14 +11,14 @@ accounts for the fact that CompiledProtocol
 registers various things for different rounds
 */
 type ByRoundRegister[ID comparable, DATA any] struct {
-	// All the data for each key
+	// All the IDs with corresponding DATA
 	mapping collection.Mapping[ID, DATA]
 	// All the IDs for a given round
 	byRounds collection.VecVec[ID]
 	// Gives the round ID of an entry
 	byRoundsIndex collection.Mapping[ID, int]
-	// Marks an entry as ignorable (but does not delete it)
-	ignored collection.Set[ID]
+	// All active (unignored) IDs in history order by rounds
+	byRoundsActive []collection.LinkedSet[ID]
 }
 
 /*
@@ -26,10 +26,10 @@ Construct a new round register
 */
 func NewRegister[ID comparable, DATA any]() ByRoundRegister[ID, DATA] {
 	return ByRoundRegister[ID, DATA]{
-		mapping:       collection.NewMapping[ID, DATA](),
-		byRounds:      collection.NewVecVec[ID](),
-		byRoundsIndex: collection.NewMapping[ID, int](),
-		ignored:       collection.NewSet[ID](),
+		mapping:        collection.NewMapping[ID, DATA](),
+		byRounds:       collection.NewVecVec[ID](),
+		byRoundsIndex:  collection.NewMapping[ID, int](),
+		byRoundsActive: []collection.LinkedSet[ID]{},
 	}
 }
 
@@ -38,9 +38,11 @@ Insert for a given round. Will panic if an item
 with the same ID has been registered first
 */
 func (r *ByRoundRegister[ID, DATA]) AddToRound(round int, id ID, data DATA) {
+	r.ReserveFor(round + 1)
 	r.mapping.InsertNew(id, data)
 	r.byRounds.AppendToInner(round, id)
 	r.byRoundsIndex.InsertNew(id, round)
+	r.byRoundsActive[round].MustAppend(id)
 }
 
 /*
@@ -48,8 +50,8 @@ Returns the list of all the keys ever. The result is returned in
 Deterministic order.
 */
 func (r *ByRoundRegister[ID, DATA]) AllKeys() []ID {
-	res := []ID{}
-	for roundID := 0; roundID < r.NumRounds(); roundID++ {
+	res := make([]ID, 0, r.mapping.Size())
+	for roundID := 0; roundID < r.byRounds.Len(); roundID++ {
 		ids := r.AllKeysAt(roundID)
 		res = append(res, ids...)
 	}
@@ -70,6 +72,30 @@ func (r *ByRoundRegister[ID, DATA]) AllKeysAt(round int) []ID {
 }
 
 /*
+Returns all the keys that are not marked as ignored in the structure
+*/
+func (r *ByRoundRegister[ID, DATA]) AllUnignoredKeys() []ID {
+	res := make([]ID, 0, r.mapping.Size())
+	for i := 0; i < r.byRounds.Len(); i++ {
+		res = append(res, r.byRoundsActive[i].ListAll()...)
+	}
+	return res
+}
+
+/*
+Returns the list of all unignored keys for a given round. Result has deterministic
+order (order of insertion)
+*/
+func (r *ByRoundRegister[ID, DATA]) AllUnignoredKeysAt(round int) []ID {
+	// Reserve up to the desired length just in case.
+	// It is absolutely legitimate to query "too far"
+	// this can happens for queries for instance.
+	// However, it should not happen for coins.
+	r.ReserveFor(round + 1)
+	return r.byRoundsActive[round].ListAll()
+}
+
+/*
 Returns the data for associated to an ID. Panic if not found
 */
 func (r *ByRoundRegister[ID, DATA]) Data(id ID) DATA {
@@ -80,11 +106,7 @@ func (r *ByRoundRegister[ID, DATA]) Data(id ID) DATA {
 Find
 */
 func (r *ByRoundRegister[ID, DATA]) Round(id ID) int {
-	round, ok := r.byRoundsIndex.TryGet(id)
-	if !ok {
-		utils.Panic("Could not find entry %v", id)
-	}
-	return round
+	return r.byRoundsIndex.MustGet(id)
 }
 
 /*
@@ -130,23 +152,10 @@ func (r *ByRoundRegister[ID, DATA]) ReserveFor(newLen int) {
 	if r.byRounds.Len() < newLen {
 		r.byRounds.Reserve(newLen)
 	}
-}
 
-/*
-Returns all the keys that are not marked as ignored in the structure
-*/
-func (s *ByRoundRegister[ID, DATA]) AllUnignoredKeys() []ID {
-	res := []ID{}
-	for r := 0; r < s.NumRounds(); r++ {
-		allKeys := s.AllKeysAt(r)
-		for _, k := range allKeys {
-			if s.IsIgnored(k) {
-				continue
-			}
-			res = append(res, k)
-		}
+	for len(r.byRoundsActive) < newLen {
+		r.byRoundsActive = append(r.byRoundsActive, collection.NewLinkedSet[ID]())
 	}
-	return res
 }
 
 /*
@@ -154,8 +163,9 @@ Marks an entry as compiled. Panic if the key is missing from the register.
 Returns true if the item was already ignored.
 */
 func (r *ByRoundRegister[ID, DATA]) MarkAsIgnored(id ID) bool {
-	r.mapping.MustExists(id)
-	return r.ignored.Insert(id)
+	round := r.byRoundsIndex.MustGet(id)
+	r.byRoundsActive[round].MustRemove(id)
+	return false
 }
 
 /*
@@ -163,6 +173,6 @@ Returns if the entry is ignored. Panics if the entry is missing from the
 map.
 */
 func (r *ByRoundRegister[ID, DATA]) IsIgnored(id ID) bool {
-	r.mapping.MustExists(id)
-	return r.ignored.Exists(id)
+	round := r.byRoundsIndex.MustGet(id)
+	return r.byRoundsActive[round].Exists(id)
 }
