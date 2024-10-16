@@ -18,6 +18,10 @@ func NewMapping[K comparable, V any]() Mapping[K, V] {
 	}
 }
 
+func (kv *Mapping[K, V]) Size() int {
+	return len(kv.innerMap)
+}
+
 // Attempts to retrieve a value from a given key. Panics
 // if it fails
 func (kv *Mapping[K, V]) MustGet(key K) V {

@@ -48,7 +48,7 @@ Returns the list of all the keys ever. The result is returned in
 Deterministic order.
 */
 func (r *ByRoundRegister[ID, DATA]) AllKeys() []ID {
-	res := []ID{}
+	res := make([]ID, 0, r.mapping.Size())
 	for roundID := 0; roundID < r.NumRounds(); roundID++ {
 		ids := r.AllKeysAt(roundID)
 		res = append(res, ids...)
@@ -136,7 +136,7 @@ func (r *ByRoundRegister[ID, DATA]) ReserveFor(newLen int) {
 Returns all the keys that are not marked as ignored in the structure
 */
 func (s *ByRoundRegister[ID, DATA]) AllUnignoredKeys() []ID {
-	res := []ID{}
+	res := make([]ID, 0, s.mapping.Size()-s.ignored.Size())
 	for r := 0; r < s.NumRounds(); r++ {
 		allKeys := s.AllKeysAt(r)
 		for _, k := range allKeys {

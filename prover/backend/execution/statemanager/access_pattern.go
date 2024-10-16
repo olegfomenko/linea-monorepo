@@ -45,7 +45,7 @@ func inspectPattern(traces []DecodedTrace) (err error) {
 	}
 
 	// No match was found : return an error with a list of the types
-	ts := []string{}
+	ts := make([]string, 0, len(traces))
 	for i := range traces {
 		ts = append(ts, fmt.Sprintf("%T", traces[i].Underlying))
 	}

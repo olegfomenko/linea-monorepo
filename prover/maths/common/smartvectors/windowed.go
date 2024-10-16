@@ -208,9 +208,9 @@ func processWindowedOnly(op operator, svecs []SmartVector, coeffs_ []int) (res S
 
 	// First we compute the union windows.
 	length := svecs[0].Len()
-	windows := []PaddedCircularWindow{}
-	intervals := []circularInterval{}
-	coeffs := []int{}
+	windows := make([]PaddedCircularWindow, 0, len(svecs))
+	intervals := make([]circularInterval, 0, len(svecs))
+	coeffs := make([]int, 0, len(svecs))
 
 	// Gather all the windows into a slice
 	for i, svec := range svecs {

@@ -295,7 +295,7 @@ func PackInMiniTrees(l2MsgHashes []string) []string {
 	paddedL2MsgHashes := make([]string, paddedLen)
 	copy(paddedL2MsgHashes, l2MsgHashes)
 
-	res := []string{}
+	res := make([]string, 0, paddedLen/l2MsgMerkleTreeMaxLeaves)
 
 	for i := 0; i < paddedLen; i += l2MsgMerkleTreeMaxLeaves {
 

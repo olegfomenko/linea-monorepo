@@ -27,7 +27,7 @@ type RollingHashUpdated struct {
 func ExtractRollingHashUpdated(logs []ethtypes.Log, l2BridgeAddress common.Address) []RollingHashUpdated {
 
 	logrus.Tracef("Filtering the following logs for rolling hash updated: %++v", logs)
-	res := []RollingHashUpdated{}
+	res := make([]RollingHashUpdated, 0, len(logs))
 	for _, log := range logs {
 
 		if !IsRollingHashUpdated(log, l2BridgeAddress) {

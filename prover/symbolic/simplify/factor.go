@@ -390,7 +390,7 @@ func optimRegroupExponents(
 		}
 	}
 
-	canonExponents := []int{}
+	canonExponents := make([]int, 0, len(canonTermList))
 	for _, e := range canonTermList {
 		canonExponents = append(canonExponents, exponentMap[e.ESHash])
 	}

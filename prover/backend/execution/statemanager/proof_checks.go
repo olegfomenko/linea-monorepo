@@ -15,7 +15,7 @@ import (
 // so any irregularity in the pattern yields a panic.
 func checkProofsForAccount(traces []DecodedTrace) error {
 
-	curr := []DecodedTrace{}
+	curr := make([]DecodedTrace, 0, len(traces))
 
 	for _, trace := range traces {
 		// push the current splice

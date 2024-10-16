@@ -93,7 +93,7 @@ func (f *Expression) anchor(b *ExpressionBoard) anchoredExpression {
 		subexpressions are anchored. And get their levels
 	*/
 	maxChildrenLevel := 0
-	childrenIDs := []nodeID{}
+	childrenIDs := make([]nodeID, 0, len(f.Children))
 	for _, child := range f.Children {
 		_ = child.anchor(b)
 		childID, ok := b.ESHashesToPos[child.ESHash]

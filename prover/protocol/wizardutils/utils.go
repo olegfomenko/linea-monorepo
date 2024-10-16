@@ -95,7 +95,7 @@ func MaxRound(handles ...ifaces.Column) int {
 // all the formatted inputs with an underscore.
 func DeriveName[R ~string](ss ...any) R {
 
-	fmtted := []string{}
+	fmtted := make([]string, 0, len(ss))
 
 	for i := range ss {
 		switch s := ss[i].(type) {

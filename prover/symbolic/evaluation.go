@@ -27,7 +27,7 @@ type GetDegree = func(m interface{}) int
 // matches the order in which the assignments to the boarded expression must be
 // provided.
 func (b *ExpressionBoard) ListVariableMetadata() []Metadata {
-	res := []Metadata{}
+	res := make([]Metadata, 0, len(b.Nodes[0]))
 	for i := range b.Nodes[0] {
 		if vari, ok := b.Nodes[0][i].Operator.(Variable); ok {
 			res = append(res, vari.Metadata)

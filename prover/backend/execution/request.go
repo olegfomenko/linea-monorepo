@@ -57,7 +57,7 @@ func (req *Request) Blocks() []ethtypes.Block {
 
 // Returns the transactions RLP encoded
 func RlpTransactions(block *ethtypes.Block) []string {
-	res := []string{}
+	res := make([]string, 0, len(block.Transactions()))
 	for _, tx := range block.Transactions() {
 		txRlp := ethereum.EncodeTxForSigning(tx)
 		res = append(res, hexutil.Encode(txRlp))
