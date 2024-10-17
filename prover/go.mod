@@ -115,4 +115,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/consensys/gnark-crypto => github.com/olegfomenko/gnark-crypto v0.14.1-rc2
+replace github.com/consensys/gnark-crypto => github.com/olegfomenko/gnark-crypto v0.14.1-rc3
