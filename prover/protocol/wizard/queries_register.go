@@ -62,7 +62,7 @@ func (r *QueriesRegistersProxy) AddToRound(round int, id ifaces.QueryID, data if
 }
 
 func (r *QueriesRegistersProxy) MarkAsIgnored(id ifaces.QueryID) bool {
-	data := r.All.mapping.MustGet(id)
+	data := r.All.Data(id)
 
 	switch data.(type) {
 	case query.LocalConstraint:
@@ -91,8 +91,7 @@ func (r *QueriesRegistersProxy) MarkAsIgnored(id ifaces.QueryID) bool {
 }
 
 func (r *QueriesRegistersProxy) IsIgnored(id ifaces.QueryID) bool {
-	r.All.MustExists(id)
-	return r.All.Exists(id)
+	return r.All.IsIgnored(id)
 }
 
 func (r *QueriesRegistersProxy) ReserveFor(newLen int) {
