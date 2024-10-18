@@ -3,7 +3,6 @@ package univariates
 import (
 	"fmt"
 	"math/big"
-	"reflect"
 	"runtime"
 	"sync"
 
@@ -149,28 +148,16 @@ func createMptsCtx(comp *wizard.CompiledIOP, targetSize int) mptsCtx {
 	*/
 	queryCount := 0
 
-	// Scan the multivariate evaluatation
-	for _, qName := range comp.QueriesParams.AllKeys() {
-
-		if comp.QueriesParams.IsIgnored(qName) {
-			continue
-		}
-
-		q_ := comp.QueriesParams.Data(qName)
-		if _, ok := q_.(query.UnivariateEval); !ok {
-			/*
-				Every other type of parametrizable queries (inner-product, local opening)
-				should have been compiled at this point.
-			*/
-			utils.Panic("query %v has type %v", qName, reflect.TypeOf(q_))
-		}
-
+	// Scan the multivariate evaluatation.
+	// Every other type of parametrizable queries (inner-product, local opening)
+	// should have been compiled at this point.
+	for _, qName := range comp.QueriesParams.AllUnignoredUnivariateEvalKeys() {
 		// Skip if it was already compiled, else insert
 		if comp.QueriesParams.MarkAsIgnored(qName) {
 			continue
 		}
 
-		q := q_.(query.UnivariateEval)
+		q := comp.QueriesParams.Data(qName).(query.UnivariateEval)
 		hs = append(hs, qName)
 
 		/*
@@ -608,9 +595,9 @@ func (ctx mptsCtx) gnarkVerify(api frontend.API, c *wizard.WizardVerifierCircuit
 
 // collect all the alleged opening values in a map, so that we can utilize them later.
 func (ctx mptsCtx) getYsHs(
-// func that can be used to return the parameters of a given query
+	// func that can be used to return the parameters of a given query
 	getParam func(ifaces.QueryID) query.UnivariateEvalParams,
-// func that can be used to return the query's metadata given its name
+	// func that can be used to return the query's metadata given its name
 	getQuery func(ifaces.QueryID) query.UnivariateEval,
 
 ) (

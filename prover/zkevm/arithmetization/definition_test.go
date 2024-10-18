@@ -18,8 +18,8 @@ func TestDefine(t *testing.T) {
 	var (
 		comp = &wizard.CompiledIOP{
 			Columns:         column.NewStore(),
-			QueriesParams:   wizard.NewRegister[ifaces.QueryID, ifaces.Query](),
-			QueriesNoParams: wizard.NewRegister[ifaces.QueryID, ifaces.Query](),
+			QueriesParams:   wizard.NewQueriesRegistersProxy(),
+			QueriesNoParams: wizard.NewQueriesRegistersProxy(),
 			Coins:           wizard.NewRegister[coin.Name, coin.Info](),
 			Precomputed:     collection.NewMapping[ifaces.ColID, ifaces.ColAssignment](),
 		}

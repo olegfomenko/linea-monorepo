@@ -42,7 +42,7 @@ type CompiledIOP struct {
 	// the prover is required to assign runtime parameters. For instance, for
 	// a univariate evaluation query : the prover is required to assign an
 	// evaluation point X and and at least one evaluation claim.
-	QueriesParams ByRoundRegister[ifaces.QueryID, ifaces.Query]
+	QueriesParams QueryByRoundRegister
 
 	// QueriesNoParams registers and stores all queries without parameters.
 	// Namely, this is storing the queries for which the prover does not need
@@ -50,7 +50,7 @@ type CompiledIOP struct {
 	// which ensures that an arithmetic expression vanishes over its domain. In
 	// this case, as long as the arithmetic expression is defined, there is
 	// nothing to add.
-	QueriesNoParams ByRoundRegister[ifaces.QueryID, ifaces.Query]
+	QueriesNoParams QueryByRoundRegister
 
 	// Coins registers and stores all the verifier's random challenge that are
 	// specified in the protocol. A challenge can be either a single field

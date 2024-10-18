@@ -119,28 +119,25 @@ func AllocateWizardCircuit(comp *CompiledIOP) (*WizardVerifierCircuit, error) {
 		deterministic order iteration and that's why we do not iterate
 		on the map directly.
 	*/
-	for _, qName := range comp.QueriesParams.AllKeys() {
 
-		/*
-			Note that we do not filter out the "already compiled" queries
-			here.
-		*/
-		qInfoIface := comp.QueriesParams.Data(qName)
+	for _, qName := range comp.QueriesParams.AllUnivariateEvalKeys() {
+		qInfo := comp.QueriesParams.Data(qName).(query.UnivariateEval)
+		// Note that nil is the default value for frontend.Variable
+		res.univariateParamsIDs.InsertNew(qName, len(res.UnivariateParams))
+		res.UnivariateParams = append(res.UnivariateParams, qInfo.GnarkAllocate())
+	}
 
-		switch qInfo := qInfoIface.(type) {
-		case query.UnivariateEval:
-			// Note that nil is the default value for frontend.Variable
-			res.univariateParamsIDs.InsertNew(qName, len(res.UnivariateParams))
-			res.UnivariateParams = append(res.UnivariateParams, qInfo.GnarkAllocate())
-		case query.InnerProduct:
-			// Note that nil is the default value for frontend.Variable
-			res.innerProductIDs.InsertNew(qName, len(res.InnerProductParams))
-			res.InnerProductParams = append(res.InnerProductParams, qInfo.GnarkAllocate())
-		case query.LocalOpening:
-			// Note that nil is the default value for frontend.Variable
-			res.localOpeningIDs.InsertNew(qName, len(res.LocalOpeningParams))
-			res.LocalOpeningParams = append(res.LocalOpeningParams, query.GnarkLocalOpeningParams{})
-		}
+	for _, qName := range comp.QueriesParams.AllInnerProductKeys() {
+		qInfo := comp.QueriesParams.Data(qName).(query.InnerProduct)
+		// Note that nil is the default value for frontend.Variable
+		res.innerProductIDs.InsertNew(qName, len(res.InnerProductParams))
+		res.InnerProductParams = append(res.InnerProductParams, qInfo.GnarkAllocate())
+	}
+
+	for _, qName := range comp.QueriesParams.AllLocalOpeningKeys() {
+		// Note that nil is the default value for frontend.Variable
+		res.localOpeningIDs.InsertNew(qName, len(res.LocalOpeningParams))
+		res.LocalOpeningParams = append(res.LocalOpeningParams, query.GnarkLocalOpeningParams{})
 	}
 
 	res.Spec = comp
@@ -398,30 +395,23 @@ func GetWizardVerifierCircuitAssignment(comp *CompiledIOP, proof Proof) *WizardV
 		Assigns the query parameters. Note that the iteration order is
 		made deterministic to match the iteration order of the
 	*/
-	for _, qName := range comp.QueriesParams.AllKeys() {
-		/*
-			Note that we do not filter out the "already compiled" queries
-			here.
-		*/
-		paramsIface := proof.QueriesParams.MustGet(qName)
 
-		switch params := paramsIface.(type) {
+	for _, qName := range comp.QueriesParams.AllUnivariateEvalKeys() {
+		params := proof.QueriesParams.MustGet(qName).(query.UnivariateEvalParams)
+		res.univariateParamsIDs.InsertNew(qName, len(res.UnivariateParams))
+		res.UnivariateParams = append(res.UnivariateParams, params.GnarkAssign())
+	}
 
-		case query.UnivariateEvalParams:
-			res.univariateParamsIDs.InsertNew(qName, len(res.UnivariateParams))
-			res.UnivariateParams = append(res.UnivariateParams, params.GnarkAssign())
+	for _, qName := range comp.QueriesParams.AllInnerProductKeys() {
+		params := proof.QueriesParams.MustGet(qName).(query.InnerProductParams)
+		res.innerProductIDs.InsertNew(qName, len(res.InnerProductParams))
+		res.InnerProductParams = append(res.InnerProductParams, params.GnarkAssign())
+	}
 
-		case query.InnerProductParams:
-			res.innerProductIDs.InsertNew(qName, len(res.InnerProductParams))
-			res.InnerProductParams = append(res.InnerProductParams, params.GnarkAssign())
-
-		case query.LocalOpeningParams:
-			res.localOpeningIDs.InsertNew(qName, len(res.LocalOpeningParams))
-			res.LocalOpeningParams = append(res.LocalOpeningParams, params.GnarkAssign())
-
-		default:
-			utils.Panic("unknow type %T", params)
-		}
+	for _, qName := range comp.QueriesParams.AllLocalOpeningKeys() {
+		params := proof.QueriesParams.MustGet(qName).(query.LocalOpeningParams)
+		res.localOpeningIDs.InsertNew(qName, len(res.LocalOpeningParams))
+		res.LocalOpeningParams = append(res.LocalOpeningParams, params.GnarkAssign())
 	}
 
 	res.Spec = comp

@@ -162,47 +162,24 @@ func Compile(comp *wizard.CompiledIOP, size int) {
 		reapplied to all "subvectors" separately and "the link" between the
 		subvectors is ensured by one or more local constraints at the junction
 	*/
-	for round := 0; round < numRound; round++ {
-		qNames := comp.QueriesNoParams.AllKeysAt(round)
-		for _, qName := range qNames {
-
-			if comp.QueriesNoParams.IsIgnored(qName) {
-				// Skip ignored constraints
-				continue
-			}
-
-			q_ := comp.QueriesNoParams.Data(qName)
-			switch q := q_.(type) {
-			case query.LocalConstraint:
-				ctx.compileLocal(comp, q)
-			case query.GlobalConstraint:
-				ctx.compileGlobal(comp, q)
-			default:
-				utils.Panic("unexpected type of query that was not compiled : %T (%v)", q, qName)
-			}
+	for _, qName := range comp.QueriesNoParams.AllUnignoredKeys() {
+		q_ := comp.QueriesNoParams.Data(qName)
+		switch q := q_.(type) {
+		case query.LocalConstraint:
+			ctx.compileLocal(comp, q)
+		case query.GlobalConstraint:
+			ctx.compileGlobal(comp, q)
+		default:
+			utils.Panic("unexpected type of query that was not compiled : %T (%v)", q, qName)
 		}
 	}
 
 	/*
 		Replace the local evaluation constraints, by one over
 	*/
-	for round := 0; round < numRound; round++ {
-		qNames := comp.QueriesParams.AllKeysAt(round)
-		for _, qName := range qNames {
-
-			if comp.QueriesParams.IsIgnored(qName) {
-				// Skip ignored constraints
-				continue
-			}
-
-			q_ := comp.QueriesParams.Data(qName)
-			switch q := q_.(type) {
-			case query.LocalOpening:
-				ctx.compileLocalOpening(comp, q)
-			default:
-				utils.Panic("unexpected type of query that was not compiled : %T (%v)", q, qName)
-			}
-		}
+	for _, qName := range comp.QueriesParams.AllUnignoredLocalOpeningKeys() {
+		q := comp.QueriesParams.Data(qName).(query.LocalOpening)
+		ctx.compileLocalOpening(comp, q)
 	}
 
 	/*
@@ -477,7 +454,6 @@ func hasInterleaved(h ifaces.Column) bool {
 }
 
 func (ctx splitterCtx) compileLocalOpening(comp *wizard.CompiledIOP, q query.LocalOpening) {
-
 	round := comp.QueriesParams.Round(q.ID)
 	comp.QueriesParams.MarkAsIgnored(q.ID)
 	position := utils.PositiveMod(column.StackOffsets(q.Pol), q.Pol.Size())

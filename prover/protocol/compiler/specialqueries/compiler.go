@@ -12,25 +12,9 @@ import (
 Reduce the fixed permutations into
 */
 func CompileFixedPermutations(comp *wizard.CompiledIOP) {
-
-	numRounds := comp.NumRounds()
-
-	/*
-		Handles the lookups and permutations checks
-	*/
-	for i := 0; i < numRounds; i++ {
-		queries := comp.QueriesNoParams.AllKeysAt(i)
-		for _, qName := range queries {
-			// Skip if it was already compiled
-			if comp.QueriesNoParams.IsIgnored(qName) {
-				continue
-			}
-
-			switch q_ := comp.QueriesNoParams.Data(qName).(type) {
-			case query.FixedPermutation:
-				reduceFixedPermutation(comp, q_, i)
-			}
-		}
+	for _, qName := range comp.QueriesNoParams.AllUnignoredFixedPermutationKeys() {
+		q := comp.QueriesNoParams.Data(qName).(query.FixedPermutation)
+		reduceFixedPermutation(comp, q, comp.QueriesNoParams.Round(qName))
 	}
 }
 

@@ -79,8 +79,8 @@ func newBuilder() Builder {
 	return Builder{
 		CompiledIOP: &CompiledIOP{
 			Columns:         column.NewStore(),
-			QueriesParams:   NewRegister[ifaces.QueryID, ifaces.Query](),
-			QueriesNoParams: NewRegister[ifaces.QueryID, ifaces.Query](),
+			QueriesParams:   NewQueriesRegistersProxy(),
+			QueriesNoParams: NewQueriesRegistersProxy(),
 			Coins:           NewRegister[coin.Name, coin.Info](),
 			Precomputed:     collection.NewMapping[ifaces.ColID, ifaces.ColAssignment](),
 		},

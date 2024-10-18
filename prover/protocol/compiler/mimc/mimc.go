@@ -20,15 +20,9 @@ func CompileMiMC(comp *wizard.CompiledIOP) {
 	round := 0
 	mimcQueries := []query.MiMC{}
 
-	for _, id := range comp.QueriesNoParams.AllUnignoredKeys() {
-
+	for _, id := range comp.QueriesNoParams.AllUnignoredMiMCKeys() {
 		// Fetch the query
-		q := comp.QueriesNoParams.Data(id)
-		qMiMC, ok := q.(query.MiMC)
-		if !ok {
-			// not a MiMC query, skip it
-			continue
-		}
+		qMiMC := comp.QueriesNoParams.Data(id).(query.MiMC)
 
 		// else mark it as ignored
 		comp.QueriesNoParams.MarkAsIgnored(id)

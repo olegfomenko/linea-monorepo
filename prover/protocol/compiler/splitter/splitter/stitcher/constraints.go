@@ -23,12 +23,8 @@ func (ctx stitchingContext) constraints() {
 func (ctx stitchingContext) LocalOpening() {
 
 	// Ignore the LocalOpening queries over the subColumns.
-	for _, qName := range ctx.comp.QueriesParams.AllUnignoredKeys() {
-		// Filters out only the LocalOpening
-		q, ok := ctx.comp.QueriesParams.Data(qName).(query.LocalOpening)
-		if !ok {
-			utils.Panic("got an uncompilable query %v", qName)
-		}
+	for _, qName := range ctx.comp.QueriesParams.AllUnignoredLocalOpeningKeys() {
+		q := ctx.comp.QueriesParams.Data(qName).(query.LocalOpening)
 
 		round := ctx.comp.QueriesParams.Round(q.ID)
 
