@@ -31,16 +31,16 @@ func Compile(comp *wizard.CompiledIOP) {
 		First compile all local constraints
 	*/
 	for i := 0; i < numRounds; i++ {
-		queries := comp.QueriesNoParams.AllKeysAt(i)
+		queries := comp.QueriesNoParams.LocalConstraint.AllKeysAt(i)
 
 		for _, qName := range queries {
 
 			// Skip if it was already compiled
-			if comp.QueriesNoParams.IsIgnored(qName) {
+			if comp.QueriesNoParams.LocalConstraint.IsIgnored(qName) {
 				continue
 			}
 
-			if q_, ok := comp.QueriesNoParams.Data(qName).(query.LocalConstraint); ok {
+			if q_, ok := comp.QueriesNoParams.LocalConstraint.Data(qName).(query.LocalConstraint); ok {
 				ReduceLocalConstraint(comp, q_, i)
 			}
 		}

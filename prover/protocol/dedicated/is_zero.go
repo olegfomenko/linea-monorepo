@@ -32,7 +32,7 @@ func IsZero(comp *wizard.CompiledIOP, c any) (ifaces.Column, wizard.ProverAction
 
 	var (
 		ctx = &isZeroCtx{
-			ctxID: len(comp.QueriesNoParams.AllKeys()),
+			ctxID: len(comp.QueriesNoParams.All.AllKeys()),
 		}
 	)
 
@@ -61,7 +61,7 @@ func IsZeroMask(comp *wizard.CompiledIOP, c, mask any) (ifaces.Column, wizard.Pr
 
 	var (
 		ctx = &isZeroCtx{
-			ctxID: len(comp.QueriesNoParams.AllKeys()),
+			ctxID: len(comp.QueriesNoParams.All.AllKeys()),
 		}
 	)
 

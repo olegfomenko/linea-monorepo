@@ -2,8 +2,6 @@ package univariates
 
 import (
 	"fmt"
-	"reflect"
-
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/linea-monorepo/prover/maths/common/smartvectors"
 	"github.com/consensys/linea-monorepo/prover/maths/field"
@@ -48,22 +46,13 @@ func Naturalize(comp *wizard.CompiledIOP) {
 
 	// The compilation process is applied separately for each query
 	for roundID := 0; roundID < comp.NumRounds(); roundID++ {
-		for _, qName := range comp.QueriesParams.AllKeysAt(roundID) {
+		for _, qName := range comp.QueriesParams.UnivariateEval.AllKeysAt(roundID) {
 
-			if comp.QueriesParams.IsIgnored(qName) {
+			if comp.QueriesParams.UnivariateEval.IsIgnored(qName) {
 				continue
 			}
 
-			q_ := comp.QueriesParams.Data(qName)
-			if _, ok := q_.(query.UnivariateEval); !ok {
-				/*
-					Every other type of parametrizable queries (inner-product, local opening)
-					should have been compiled at this point.
-				*/
-				utils.Panic("query %v has type %v expected only univariate", qName, reflect.TypeOf(q_))
-			}
-
-			q := q_.(query.UnivariateEval)
+			q := comp.QueriesParams.UnivariateEval.Data(qName).(query.UnivariateEval)
 
 			/*
 				We skip the queries that are ineligible for compilation : the

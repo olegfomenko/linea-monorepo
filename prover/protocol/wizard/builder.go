@@ -79,8 +79,8 @@ func newBuilder() Builder {
 	return Builder{
 		CompiledIOP: &CompiledIOP{
 			Columns:         column.NewStore(),
-			QueriesParams:   NewRegister[ifaces.QueryID, ifaces.Query](),
-			QueriesNoParams: NewRegister[ifaces.QueryID, ifaces.Query](),
+			QueriesParams:   NewQueriesRegistersProxy(),
+			QueriesNoParams: NewQueriesRegistersProxy(),
 			Coins:           NewRegister[coin.Name, coin.Info](),
 			Precomputed:     collection.NewMapping[ifaces.ColID, ifaces.ColAssignment](),
 		},
@@ -270,16 +270,16 @@ func (b *Builder) equalizeRounds(numRounds int) {
 	/*
 		Check and reserve for queries that don't take runtime parameters
 	*/
-	if comp.QueriesNoParams.NumRounds() > numRounds {
-		utils.Panic("Bug : numRounds is %v but %v rounds are registered for the QueriesNoParams. %v", numRounds, comp.QueriesNoParams.NumRounds(), helpMsg)
+	if comp.QueriesNoParams.All.NumRounds() > numRounds {
+		utils.Panic("Bug : numRounds is %v but %v rounds are registered for the QueriesNoParams. %v", numRounds, comp.QueriesNoParams.All.NumRounds(), helpMsg)
 	}
 	comp.QueriesNoParams.ReserveFor(numRounds)
 
 	/*
 		Check and reserve for the queries that takes runtime parameters
 	*/
-	if comp.QueriesParams.NumRounds() > numRounds {
-		utils.Panic("Bug : numRounds is %v but %v rounds are registered for the QueriesParams. %v", numRounds, comp.QueriesParams.NumRounds(), helpMsg)
+	if comp.QueriesParams.All.NumRounds() > numRounds {
+		utils.Panic("Bug : numRounds is %v but %v rounds are registered for the QueriesParams. %v", numRounds, comp.QueriesParams.All.NumRounds(), helpMsg)
 	}
 	comp.QueriesParams.ReserveFor(numRounds)
 

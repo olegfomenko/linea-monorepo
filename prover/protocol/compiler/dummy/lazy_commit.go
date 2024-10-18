@@ -34,8 +34,8 @@ func LazyCommit(comp *wizard.CompiledIOP) {
 		The filter returns true, as long as the query has not been marked as
 		already compiled. This is to avoid them being compiled a second time.
 	*/
-	queriesParamsToCompile := comp.QueriesParams.AllUnignoredKeys()
-	queriesNoParamsToCompile := comp.QueriesNoParams.AllUnignoredKeys()
+	queriesParamsToCompile := comp.QueriesParams.All.AllUnignoredKeys()
+	queriesNoParamsToCompile := comp.QueriesNoParams.All.AllUnignoredKeys()
 	comsAllRounds := [][]ifaces.ColID{}
 
 	for roundID := 0; roundID < numRounds; roundID++ {

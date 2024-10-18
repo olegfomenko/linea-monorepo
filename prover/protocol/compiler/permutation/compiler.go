@@ -23,19 +23,14 @@ func CompileGrandProduct(comp *wizard.CompiledIOP) {
 		zCatalog = map[[2]int]*ZCtx{}
 	)
 
-	for _, qName := range comp.QueriesNoParams.AllUnignoredKeys() {
-
-		// Filter out non permutation queries
-		permutation, ok := comp.QueriesNoParams.Data(qName).(query.Permutation)
-		if !ok {
-			continue
-		}
+	for _, qName := range comp.QueriesNoParams.Permutation.AllUnignoredKeys() {
+		permutation := comp.QueriesNoParams.Permutation.Data(qName).(query.Permutation)
 
 		// This ensures that the lookup query is not used again in the
 		// compilation process. We know that the query was already ignored at
 		// the beginning because we are iterating over the unignored keys.
 		comp.QueriesNoParams.MarkAsIgnored(qName)
-		round := comp.QueriesNoParams.Round(qName)
+		round := comp.QueriesNoParams.Permutation.Round(qName)
 
 		dispatchPermutation(comp, zCatalog, round, permutation)
 	}

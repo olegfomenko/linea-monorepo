@@ -119,28 +119,25 @@ func AllocateWizardCircuit(comp *CompiledIOP) (*WizardVerifierCircuit, error) {
 		deterministic order iteration and that's why we do not iterate
 		on the map directly.
 	*/
-	for _, qName := range comp.QueriesParams.AllKeys() {
 
-		/*
-			Note that we do not filter out the "already compiled" queries
-			here.
-		*/
-		qInfoIface := comp.QueriesParams.Data(qName)
+	for _, qName := range comp.QueriesParams.UnivariateEval.AllKeys() {
+		qInfo := comp.QueriesParams.All.Data(qName).(query.UnivariateEval)
+		// Note that nil is the default value for frontend.Variable
+		res.univariateParamsIDs.InsertNew(qName, len(res.UnivariateParams))
+		res.UnivariateParams = append(res.UnivariateParams, qInfo.GnarkAllocate())
+	}
 
-		switch qInfo := qInfoIface.(type) {
-		case query.UnivariateEval:
-			// Note that nil is the default value for frontend.Variable
-			res.univariateParamsIDs.InsertNew(qName, len(res.UnivariateParams))
-			res.UnivariateParams = append(res.UnivariateParams, qInfo.GnarkAllocate())
-		case query.InnerProduct:
-			// Note that nil is the default value for frontend.Variable
-			res.innerProductIDs.InsertNew(qName, len(res.InnerProductParams))
-			res.InnerProductParams = append(res.InnerProductParams, qInfo.GnarkAllocate())
-		case query.LocalOpening:
-			// Note that nil is the default value for frontend.Variable
-			res.localOpeningIDs.InsertNew(qName, len(res.LocalOpeningParams))
-			res.LocalOpeningParams = append(res.LocalOpeningParams, query.GnarkLocalOpeningParams{})
-		}
+	for _, qName := range comp.QueriesParams.InnerProduct.AllKeys() {
+		qInfo := comp.QueriesParams.All.Data(qName).(query.InnerProduct)
+		// Note that nil is the default value for frontend.Variable
+		res.innerProductIDs.InsertNew(qName, len(res.InnerProductParams))
+		res.InnerProductParams = append(res.InnerProductParams, qInfo.GnarkAllocate())
+	}
+
+	for _, qName := range comp.QueriesParams.LocalOpening.AllKeys() {
+		// Note that nil is the default value for frontend.Variable
+		res.localOpeningIDs.InsertNew(qName, len(res.LocalOpeningParams))
+		res.LocalOpeningParams = append(res.LocalOpeningParams, query.GnarkLocalOpeningParams{})
 	}
 
 	res.Spec = comp
@@ -206,7 +203,7 @@ func (c *WizardVerifierCircuit) generateAllRandomCoins(_ frontend.API) {
 			/*
 				Also include the prover's allegations for all evaluations
 			*/
-			queries := c.Spec.QueriesParams.AllKeysAt(currRound - 1)
+			queries := c.Spec.QueriesParams.All.AllKeysAt(currRound - 1)
 			for _, qName := range queries {
 				// Implicitly, this will panic whenever we start supporting
 				// a new type of query params
@@ -285,7 +282,7 @@ func (c *WizardVerifierCircuit) GetUnivariateParams(name ifaces.QueryID) query.G
 // GetUnivariateEval univariate eval metadata of the requested query. Panic if
 // not found.
 func (c *WizardVerifierCircuit) GetUnivariateEval(name ifaces.QueryID) query.UnivariateEval {
-	return c.Spec.QueriesParams.Data(name).(query.UnivariateEval)
+	return c.Spec.QueriesParams.UnivariateEval.Data(name).(query.UnivariateEval)
 }
 
 // GetInnerProductParams returns pre-assigned parameters for the requested
@@ -296,7 +293,7 @@ func (c *WizardVerifierCircuit) GetInnerProductParams(name ifaces.QueryID) query
 	params := c.InnerProductParams[qID]
 
 	// Sanity-checks
-	info := c.Spec.QueriesParams.Data(name).(query.InnerProduct)
+	info := c.Spec.QueriesParams.InnerProduct.Data(name).(query.InnerProduct)
 	if len(info.Bs) != len(params.Ys) {
 		utils.Panic("(for %v) inconsistent lengths %v %v", name, len(info.Bs), len(params.Ys))
 	}
@@ -398,30 +395,23 @@ func GetWizardVerifierCircuitAssignment(comp *CompiledIOP, proof Proof) *WizardV
 		Assigns the query parameters. Note that the iteration order is
 		made deterministic to match the iteration order of the
 	*/
-	for _, qName := range comp.QueriesParams.AllKeys() {
-		/*
-			Note that we do not filter out the "already compiled" queries
-			here.
-		*/
-		paramsIface := proof.QueriesParams.MustGet(qName)
 
-		switch params := paramsIface.(type) {
+	for _, qName := range comp.QueriesParams.UnivariateEval.AllKeys() {
+		params := proof.QueriesParams.MustGet(qName).(query.UnivariateEvalParams)
+		res.univariateParamsIDs.InsertNew(qName, len(res.UnivariateParams))
+		res.UnivariateParams = append(res.UnivariateParams, params.GnarkAssign())
+	}
 
-		case query.UnivariateEvalParams:
-			res.univariateParamsIDs.InsertNew(qName, len(res.UnivariateParams))
-			res.UnivariateParams = append(res.UnivariateParams, params.GnarkAssign())
+	for _, qName := range comp.QueriesParams.InnerProduct.AllKeys() {
+		params := proof.QueriesParams.MustGet(qName).(query.InnerProductParams)
+		res.innerProductIDs.InsertNew(qName, len(res.InnerProductParams))
+		res.InnerProductParams = append(res.InnerProductParams, params.GnarkAssign())
+	}
 
-		case query.InnerProductParams:
-			res.innerProductIDs.InsertNew(qName, len(res.InnerProductParams))
-			res.InnerProductParams = append(res.InnerProductParams, params.GnarkAssign())
-
-		case query.LocalOpeningParams:
-			res.localOpeningIDs.InsertNew(qName, len(res.LocalOpeningParams))
-			res.LocalOpeningParams = append(res.LocalOpeningParams, params.GnarkAssign())
-
-		default:
-			utils.Panic("unknow type %T", params)
-		}
+	for _, qName := range comp.QueriesParams.LocalOpening.AllKeys() {
+		params := proof.QueriesParams.MustGet(qName).(query.LocalOpeningParams)
+		res.localOpeningIDs.InsertNew(qName, len(res.LocalOpeningParams))
+		res.LocalOpeningParams = append(res.LocalOpeningParams, params.GnarkAssign())
 	}
 
 	res.Spec = comp
@@ -430,7 +420,7 @@ func GetWizardVerifierCircuitAssignment(comp *CompiledIOP, proof Proof) *WizardV
 
 // GetParams returns a query parameters as a generic interface
 func (c *WizardVerifierCircuit) GetParams(id ifaces.QueryID) ifaces.GnarkQueryParams {
-	switch t := c.Spec.QueriesParams.Data(id).(type) {
+	switch t := c.Spec.QueriesParams.All.Data(id).(type) {
 	case query.UnivariateEval:
 		return c.GetUnivariateParams(id)
 	case query.LocalOpening:

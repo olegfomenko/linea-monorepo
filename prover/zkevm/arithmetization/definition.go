@@ -88,7 +88,7 @@ func (s *schemaScanner) scanConstraints() {
 
 	for _, corsetCS := range corsetCSs {
 		name := corsetCS.String()
-		if s.Comp.QueriesNoParams.Exists(ifaces.QueryID(name)) {
+		if s.Comp.QueriesNoParams.All.Exists(ifaces.QueryID(name)) {
 			continue
 		}
 		s.addConstraintInComp(name, corsetCS)

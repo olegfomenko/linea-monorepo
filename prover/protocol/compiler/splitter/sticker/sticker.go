@@ -333,12 +333,12 @@ func (ctx *stickContext) createMapToNew() {
 
 // Compiling the local constraints
 func (ctx *stickContext) compileArithmeticConstraints() {
-	for _, qName := range ctx.comp.QueriesNoParams.AllUnignoredKeys() {
+	for _, qName := range ctx.comp.QueriesNoParams.All.AllUnignoredKeys() {
 
-		q := ctx.comp.QueriesNoParams.Data(qName)
+		q := ctx.comp.QueriesNoParams.All.Data(qName)
 
 		// round of definition of the query to compile
-		round := ctx.comp.QueriesNoParams.Round(qName)
+		round := ctx.comp.QueriesNoParams.All.Round(qName)
 
 		switch q := q.(type) {
 		case query.LocalConstraint:
@@ -398,10 +398,10 @@ func (ctx *stickContext) compileArithmeticConstraints() {
 // Compiling the fixed evaluations is made by
 func (ctx *stickContext) compileFixedEvaluation() {
 
-	for _, qName := range ctx.comp.QueriesParams.AllUnignoredKeys() {
+	for _, qName := range ctx.comp.QueriesParams.All.AllUnignoredKeys() {
 
 		// Filters out only the
-		q, ok := ctx.comp.QueriesParams.Data(qName).(query.LocalOpening)
+		q, ok := ctx.comp.QueriesParams.All.Data(qName).(query.LocalOpening)
 		if !ok {
 			utils.Panic("got an uncompilable query %v", qName)
 		}

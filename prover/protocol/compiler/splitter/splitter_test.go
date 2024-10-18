@@ -156,9 +156,9 @@ func testSplitter(t *testing.T, splitSize int, gen func() (wizard.DefineFunc, wi
 
 	require.NoError(t, err)
 
-	for _, qName := range comp.QueriesNoParams.AllKeysAt(0) {
+	for _, qName := range comp.QueriesNoParams.All.AllKeysAt(0) {
 
-		switch q := comp.QueriesNoParams.Data(qName).(type) {
+		switch q := comp.QueriesNoParams.All.Data(qName).(type) {
 
 		case query.GlobalConstraint:
 			board := q.Expression.Board()
