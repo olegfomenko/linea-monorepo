@@ -8,7 +8,6 @@ import (
 
 	"github.com/consensys/linea-monorepo/prover/utils"
 	"github.com/pkg/profile"
-	"github.com/sirupsen/logrus"
 )
 
 var SKIP_PROFILING = true
@@ -16,13 +15,6 @@ var SKIP_PROFILING = true
 // ProfileTrace run the benchmark function with optionally, benchmarking and tracing
 // The path should neither start nor end with a "/".
 func ProfileTrace(name string, profiled, traced bool, fn func()) {
-
-	if SKIP_PROFILING {
-		logrus.Warnf("Skipping the profiling globally")
-		fn()
-		return
-	}
-
 	var pprof interface{ Stop() }
 
 	/*

@@ -69,7 +69,7 @@ func MulElementWise(res, a, b []field.Element) {
 	}
 
 	for i := range a {
-		res[i].Mul(&a[i], &b[i])
+		fr.Mul(&res[i], &a[i], &b[i])
 	}
 }
 
