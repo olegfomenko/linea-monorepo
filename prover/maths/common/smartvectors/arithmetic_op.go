@@ -1,10 +1,9 @@
 package smartvectors
 
 import (
-	"math/big"
-
 	"github.com/consensys/linea-monorepo/prover/maths/common/vector"
 	"github.com/consensys/linea-monorepo/prover/maths/field"
+	"github.com/consensys/gnark-crypto/field/pool"
 )
 
 // operator represents a mathematical operation that can be performed between
@@ -202,8 +201,12 @@ func (productOp) constIntoConst(res, x *field.Element, coeff int) {
 		tmp.Mul(&tmp, x)
 		res.Mul(res, &tmp)
 	default:
+		coeffBig := pool.BigInt.Get().SetInt64(int64(coeff))
+		defer pool.BigInt.Put(coeffBig)
+
 		var tmp field.Element
-		tmp.Exp(*x, big.NewInt(int64(coeff)))
+		tmp.Exp(*x, coeffBig)
+
 		res.Mul(res, &tmp)
 	}
 }
@@ -231,9 +234,12 @@ func (productOp) vecIntoVec(res, x []field.Element, coeff int) {
 			res[i].Mul(&res[i], &tmp)
 		}
 	default:
+		coeffBig := pool.BigInt.Get().SetInt64(int64(coeff))
+		defer pool.BigInt.Put(coeffBig)
+
 		var tmp field.Element
 		for i := range res {
-			tmp.Exp(x[i], big.NewInt(int64(coeff)))
+			tmp.Exp(x[i], coeffBig)
 			res[i].Mul(&res[i], &tmp)
 		}
 	}
@@ -260,7 +266,10 @@ func (productOp) constIntoTerm(res, x *field.Element, coeff int) {
 		tmp.Square(x)
 		res.Mul(&tmp, x)
 	default:
-		res.Exp(*x, big.NewInt(int64(coeff)))
+		coeffBig := pool.BigInt.Get().SetInt64(int64(coeff))
+		defer pool.BigInt.Put(coeffBig)
+
+		res.Exp(*x, coeffBig)
 	}
 }
 
@@ -281,9 +290,11 @@ func (productOp) vecIntoTerm(res, x []field.Element, coeff int) {
 			res[i].Mul(&tmp, &x[i])
 		}
 	default:
-		c := big.NewInt(int64(coeff))
+		coeffBig := pool.BigInt.Get().SetInt64(int64(coeff))
+		defer pool.BigInt.Put(coeffBig)
+
 		for i := range res {
-			res[i].Exp(x[i], c)
+			res[i].Exp(x[i], coeffBig)
 		}
 	}
 }
