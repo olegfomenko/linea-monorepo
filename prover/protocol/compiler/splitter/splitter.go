@@ -163,7 +163,7 @@ func Compile(comp *wizard.CompiledIOP, size int) {
 		subvectors is ensured by one or more local constraints at the junction
 	*/
 	for round := 0; round < numRound; round++ {
-		qNames := comp.QueriesNoParams.AllKeysAt(round)
+		qNames := comp.QueriesNoParams.All.AllKeysAt(round)
 		for _, qName := range qNames {
 
 			if comp.QueriesNoParams.IsIgnored(qName) {
@@ -171,7 +171,7 @@ func Compile(comp *wizard.CompiledIOP, size int) {
 				continue
 			}
 
-			q_ := comp.QueriesNoParams.Data(qName)
+			q_ := comp.QueriesNoParams.All.Data(qName)
 			switch q := q_.(type) {
 			case query.LocalConstraint:
 				ctx.compileLocal(comp, q)
@@ -187,7 +187,8 @@ func Compile(comp *wizard.CompiledIOP, size int) {
 		Replace the local evaluation constraints, by one over
 	*/
 	for round := 0; round < numRound; round++ {
-		qNames := comp.QueriesParams.AllKeysAt(round)
+		// Expected that only LocalOpening queries left to be compiled
+		qNames := comp.QueriesParams.LocalOpening.AllKeysAt(round)
 		for _, qName := range qNames {
 
 			if comp.QueriesParams.IsIgnored(qName) {
@@ -195,13 +196,8 @@ func Compile(comp *wizard.CompiledIOP, size int) {
 				continue
 			}
 
-			q_ := comp.QueriesParams.Data(qName)
-			switch q := q_.(type) {
-			case query.LocalOpening:
-				ctx.compileLocalOpening(comp, q)
-			default:
-				utils.Panic("unexpected type of query that was not compiled : %T (%v)", q, qName)
-			}
+			q := comp.QueriesParams.LocalOpening.Data(qName).(query.LocalOpening)
+			ctx.compileLocalOpening(comp, q)
 		}
 	}
 
@@ -228,7 +224,7 @@ func (ctx splitterCtx) compileGlobal(comp *wizard.CompiledIOP, q query.GlobalCon
 
 	board := q.Board()
 	metadatas := board.ListVariableMetadata()
-	round := comp.QueriesNoParams.Round(q.ID)
+	round := comp.QueriesNoParams.GlobalConstraint.Round(q.ID)
 
 	// Check if there is a "hasInterleaved" handle
 	for i := range metadatas {
@@ -370,7 +366,7 @@ func (ctx splitterCtx) compileGlobal(comp *wizard.CompiledIOP, q query.GlobalCon
 func (ctx splitterCtx) compileLocal(comp *wizard.CompiledIOP, q query.LocalConstraint) {
 	// Mark as ignored
 	comp.QueriesNoParams.MarkAsIgnored(q.ID)
-	round := comp.QueriesNoParams.Round(q.ID)
+	round := comp.QueriesNoParams.LocalConstraint.Round(q.ID)
 
 	board := q.Expression.Board()
 	metadatas := board.ListVariableMetadata()
@@ -478,7 +474,7 @@ func hasInterleaved(h ifaces.Column) bool {
 
 func (ctx splitterCtx) compileLocalOpening(comp *wizard.CompiledIOP, q query.LocalOpening) {
 
-	round := comp.QueriesParams.Round(q.ID)
+	round := comp.QueriesParams.LocalOpening.Round(q.ID)
 	comp.QueriesParams.MarkAsIgnored(q.ID)
 	position := utils.PositiveMod(column.StackOffsets(q.Pol), q.Pol.Size())
 

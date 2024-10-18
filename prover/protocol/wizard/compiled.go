@@ -42,7 +42,7 @@ type CompiledIOP struct {
 	// the prover is required to assign runtime parameters. For instance, for
 	// a univariate evaluation query : the prover is required to assign an
 	// evaluation point X and and at least one evaluation claim.
-	QueriesParams ByRoundRegister[ifaces.QueryID, ifaces.Query]
+	QueriesParams QueriesRegistersProxy
 
 	// QueriesNoParams registers and stores all queries without parameters.
 	// Namely, this is storing the queries for which the prover does not need
@@ -50,7 +50,7 @@ type CompiledIOP struct {
 	// which ensures that an arithmetic expression vanishes over its domain. In
 	// this case, as long as the arithmetic expression is defined, there is
 	// nothing to add.
-	QueriesNoParams ByRoundRegister[ifaces.QueryID, ifaces.Query]
+	QueriesNoParams QueriesRegistersProxy
 
 	// Coins registers and stores all the verifier's random challenge that are
 	// specified in the protocol. A challenge can be either a single field
@@ -548,7 +548,7 @@ func (c *CompiledIOP) InsertInnerProduct(round int, name ifaces.QueryID, a iface
 //
 // Deprecated: the user should directly grab it from the `Data` section.
 func (run *CompiledIOP) GetInnerProduct(name ifaces.QueryID) query.InnerProduct {
-	return run.QueriesParams.Data(name).(query.InnerProduct)
+	return run.QueriesParams.InnerProduct.Data(name).(query.InnerProduct)
 }
 
 // InsertUnivariate declares a new univariate evaluation query [query.UnivariateEval]

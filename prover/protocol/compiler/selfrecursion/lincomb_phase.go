@@ -61,7 +61,7 @@ func (ctx *SelfRecursionCtx) consistencyBetweenYsAndUalpha() {
 	ctx.Accessors.InterpolateUalphaX = functionals.Interpolation(
 		ctx.comp,
 		ctx.interpolateUAlphaX(),
-		accessors.NewUnivariateX(ctx.VortexCtx.Query, ctx.comp.QueriesParams.Round(ctx.VortexCtx.Query.QueryID)),
+		accessors.NewUnivariateX(ctx.VortexCtx.Query, ctx.comp.QueriesParams.All.Round(ctx.VortexCtx.Query.QueryID)),
 		ctx.Columns.Ualpha,
 	)
 

@@ -66,17 +66,12 @@ func (ctx *localOpeningCtx) populateWith(comp *wizard.CompiledIOP) {
 	// The main idea is that we want to aggregate the fixed point evaluations
 	// that are on the same points.
 
-	for _, qName := range comp.QueriesParams.AllUnignoredKeys() {
-		q, ok := comp.QueriesParams.Data(qName).(query.LocalOpening)
-		if !ok {
-			// not an inner-product query
-			continue
-		}
-
+	for _, qName := range comp.QueriesParams.LocalOpening.AllUnignoredKeys() {
+		q := comp.QueriesParams.LocalOpening.Data(qName).(query.LocalOpening)
 		comp.QueriesParams.MarkAsIgnored(qName)
 		compiledQueries = append(compiledQueries, q)
 		handles = append(handles, q.Pol)
-		startRound = utils.Max(startRound, comp.QueriesParams.Round(qName))
+		startRound = utils.Max(startRound, comp.QueriesParams.LocalOpening.Round(qName))
 	}
 
 	ctx.compiledQueries = compiledQueries
