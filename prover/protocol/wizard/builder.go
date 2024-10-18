@@ -81,7 +81,7 @@ func newBuilder() Builder {
 			Columns:         column.NewStore(),
 			QueriesParams:   NewQueriesRegistersProxy(),
 			QueriesNoParams: NewQueriesRegistersProxy(),
-			Coins:           NewRegister[coin.Name, coin.Info](),
+			Coins:           NewCoinByRoundRegister(),
 			Precomputed:     collection.NewMapping[ifaces.ColID, ifaces.ColAssignment](),
 		},
 		currRound:      0,

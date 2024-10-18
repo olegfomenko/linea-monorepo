@@ -57,7 +57,7 @@ type CompiledIOP struct {
 	// element, an array of field element or an array of bounded field elements.
 	// The challenges can be used to specify sub-protocols and are a very
 	// widespread cryptographic tool to build them.
-	Coins ByRoundRegister[coin.Name, coin.Info]
+	Coins CoinByRoundRegister
 
 	// SubProver stores all the specified steps that needs to be performed by
 	// the prover as specified in the protocol. These functions are provided to

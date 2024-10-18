@@ -174,7 +174,7 @@ func newEmptyCompiledIOP() *wizard.CompiledIOP {
 		Columns:         column.NewStore(),
 		QueriesParams:   wizard.NewQueriesRegistersProxy(),
 		QueriesNoParams: wizard.NewQueriesRegistersProxy(),
-		Coins:           wizard.NewRegister[coin.Name, coin.Info](),
+		Coins:           wizard.NewCoinByRoundRegister(),
 		Precomputed:     collection.NewMapping[ifaces.ColID, ifaces.ColAssignment](),
 	}
 }
