@@ -6,6 +6,7 @@ import "github.com/consensys/linea-monorepo/prover/utils"
 // The inner slice is append only
 type VecVec[T any] struct {
 	inner [][]T
+	cnt   int
 }
 
 /*
@@ -26,6 +27,10 @@ func (v *VecVec[T]) reserveOuter(newLen int) {
 	for len((*v).inner) < newLen {
 		(*v).inner = append((*v).inner, make([]T, 0))
 	}
+}
+
+func (v *VecVec[T]) Count() int {
+	return v.cnt
 }
 
 // Returns the inner double-slice
@@ -67,6 +72,7 @@ func (v *VecVec[T]) AppendToInner(pos int, t ...T) {
 
 	// Then do the appending
 	v.inner[pos] = append(v.inner[pos], t...)
+	v.cnt++
 }
 
 // Allocates up to a given rounds number

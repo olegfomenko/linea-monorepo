@@ -78,7 +78,7 @@ func (r *QueryByRoundRegister) AddToRound(round int, id ifaces.QueryID, data ifa
 }
 
 func (r *QueryByRoundRegister) AllKeys() []ifaces.QueryID {
-	res := make([]ifaces.QueryID, 0, r.mapping.Size())
+	res := make([]ifaces.QueryID, 0, r.all.Count())
 	for roundID := 0; roundID < r.NumRounds(); roundID++ {
 		ids := r.AllKeysAt(roundID)
 		res = append(res, ids...)
@@ -87,7 +87,7 @@ func (r *QueryByRoundRegister) AllKeys() []ifaces.QueryID {
 }
 
 func (r *QueryByRoundRegister) AllLocalConstraintKeys() []ifaces.QueryID {
-	res := make([]ifaces.QueryID, 0, r.mapping.Size())
+	res := make([]ifaces.QueryID, 0, r.localConstraint.Count())
 	for roundID := 0; roundID < r.NumRounds(); roundID++ {
 		ids := r.AllLocalConstraintKeysAt(roundID)
 		res = append(res, ids...)
@@ -96,7 +96,7 @@ func (r *QueryByRoundRegister) AllLocalConstraintKeys() []ifaces.QueryID {
 }
 
 func (r *QueryByRoundRegister) AllGlobalConstraintKeys() []ifaces.QueryID {
-	res := make([]ifaces.QueryID, 0, r.mapping.Size())
+	res := make([]ifaces.QueryID, 0, r.globalConstraint.Count())
 	for roundID := 0; roundID < r.NumRounds(); roundID++ {
 		ids := r.AllGlobalConstraintKeysAt(roundID)
 		res = append(res, ids...)
@@ -105,7 +105,7 @@ func (r *QueryByRoundRegister) AllGlobalConstraintKeys() []ifaces.QueryID {
 }
 
 func (r *QueryByRoundRegister) AllLocalOpeningKeys() []ifaces.QueryID {
-	res := make([]ifaces.QueryID, 0, r.mapping.Size())
+	res := make([]ifaces.QueryID, 0, r.localOpening.Count())
 	for roundID := 0; roundID < r.NumRounds(); roundID++ {
 		ids := r.AllLocalOpeningKeysAt(roundID)
 		res = append(res, ids...)
@@ -114,7 +114,7 @@ func (r *QueryByRoundRegister) AllLocalOpeningKeys() []ifaces.QueryID {
 }
 
 func (r *QueryByRoundRegister) AllInnerProductKeys() []ifaces.QueryID {
-	res := make([]ifaces.QueryID, 0, r.mapping.Size())
+	res := make([]ifaces.QueryID, 0, r.innerProduct.Count())
 	for roundID := 0; roundID < r.NumRounds(); roundID++ {
 		ids := r.AllInnerProductKeysAt(roundID)
 		res = append(res, ids...)
@@ -123,7 +123,7 @@ func (r *QueryByRoundRegister) AllInnerProductKeys() []ifaces.QueryID {
 }
 
 func (r *QueryByRoundRegister) AllInclusionKeys() []ifaces.QueryID {
-	res := make([]ifaces.QueryID, 0, r.mapping.Size())
+	res := make([]ifaces.QueryID, 0, r.inclusion.Count())
 	for roundID := 0; roundID < r.NumRounds(); roundID++ {
 		ids := r.AllInclusionKeysAt(roundID)
 		res = append(res, ids...)
@@ -132,7 +132,7 @@ func (r *QueryByRoundRegister) AllInclusionKeys() []ifaces.QueryID {
 }
 
 func (r *QueryByRoundRegister) AllMiMCKeys() []ifaces.QueryID {
-	res := make([]ifaces.QueryID, 0, r.mapping.Size())
+	res := make([]ifaces.QueryID, 0, r.miMC.Count())
 	for roundID := 0; roundID < r.NumRounds(); roundID++ {
 		ids := r.AllMiMCKeysAt(roundID)
 		res = append(res, ids...)
@@ -141,7 +141,7 @@ func (r *QueryByRoundRegister) AllMiMCKeys() []ifaces.QueryID {
 }
 
 func (r *QueryByRoundRegister) AllPermutationKeys() []ifaces.QueryID {
-	res := make([]ifaces.QueryID, 0, r.mapping.Size())
+	res := make([]ifaces.QueryID, 0, r.permutation.Count())
 	for roundID := 0; roundID < r.NumRounds(); roundID++ {
 		ids := r.AllPermutationKeysAt(roundID)
 		res = append(res, ids...)
@@ -150,7 +150,7 @@ func (r *QueryByRoundRegister) AllPermutationKeys() []ifaces.QueryID {
 }
 
 func (r *QueryByRoundRegister) AllFixedPermutationKeys() []ifaces.QueryID {
-	res := make([]ifaces.QueryID, 0, r.mapping.Size())
+	res := make([]ifaces.QueryID, 0, r.fixedPermutation.Count())
 	for roundID := 0; roundID < r.NumRounds(); roundID++ {
 		ids := r.AllFixedPermutationKeysAt(roundID)
 		res = append(res, ids...)
@@ -159,7 +159,7 @@ func (r *QueryByRoundRegister) AllFixedPermutationKeys() []ifaces.QueryID {
 }
 
 func (r *QueryByRoundRegister) AllUnivariateEvalKeys() []ifaces.QueryID {
-	res := make([]ifaces.QueryID, 0, r.mapping.Size())
+	res := make([]ifaces.QueryID, 0, r.univariateEval.Count())
 	for roundID := 0; roundID < r.NumRounds(); roundID++ {
 		ids := r.AllUnivariateEvalKeysAt(roundID)
 		res = append(res, ids...)
@@ -168,7 +168,7 @@ func (r *QueryByRoundRegister) AllUnivariateEvalKeys() []ifaces.QueryID {
 }
 
 func (r *QueryByRoundRegister) AllRangeKeys() []ifaces.QueryID {
-	res := make([]ifaces.QueryID, 0, r.mapping.Size())
+	res := make([]ifaces.QueryID, 0, r.rangee.Count())
 	for roundID := 0; roundID < r.NumRounds(); roundID++ {
 		ids := r.AllRangeKeysAt(roundID)
 		res = append(res, ids...)
@@ -294,29 +294,8 @@ func (r *QueryByRoundRegister) AllUnignoredKeys() []ifaces.QueryID {
 	return res
 }
 
-//case query.LocalConstraint:
-//		r.localConstraint.AppendToInner(round, id)
-//	case query.GlobalConstraint:
-//		r.globalConstraint.AppendToInner(round, id)
-//	case query.LocalOpening:
-//		r.localOpening.AppendToInner(round, id)
-//	case query.InnerProduct:
-//		r.innerProduct.AppendToInner(round, id)
-//	case query.Inclusion:
-//		r.inclusion.AppendToInner(round, id)
-//	case query.MiMC:
-//		r.miMC.AppendToInner(round, id)
-//	case query.Permutation:
-//		r.permutation.AppendToInner(round, id)
-//	case query.FixedPermutation:
-//		r.fixedPermutation.AppendToInner(round, id)
-//	case query.UnivariateEval:
-//		r.univariateEval.AppendToInner(round, id)
-//	case query.Range:
-//		r.rangee.AppendToInner(round, id)
-
 func (r *QueryByRoundRegister) AllUnignoredLocalConstraintKeys() []ifaces.QueryID {
-	res := make([]ifaces.QueryID, 0, min(r.ignored.Size(), r.localConstraint.Len()))
+	res := make([]ifaces.QueryID, 0, min(r.ignored.Size(), r.localConstraint.Count()))
 
 	for i := 0; i < r.NumRounds(); i++ {
 		allKeys := r.AllLocalConstraintKeysAt(i)
@@ -331,7 +310,7 @@ func (r *QueryByRoundRegister) AllUnignoredLocalConstraintKeys() []ifaces.QueryI
 }
 
 func (r *QueryByRoundRegister) AllUnignoredGlobalConstraintKeys() []ifaces.QueryID {
-	res := make([]ifaces.QueryID, 0, min(r.ignored.Size(), r.globalConstraint.Len()))
+	res := make([]ifaces.QueryID, 0, min(r.ignored.Size(), r.globalConstraint.Count()))
 
 	for i := 0; i < r.NumRounds(); i++ {
 		allKeys := r.AllGlobalConstraintKeysAt(i)
@@ -346,7 +325,7 @@ func (r *QueryByRoundRegister) AllUnignoredGlobalConstraintKeys() []ifaces.Query
 }
 
 func (r *QueryByRoundRegister) AllUnignoredLocalOpeningKeys() []ifaces.QueryID {
-	res := make([]ifaces.QueryID, 0, min(r.ignored.Size(), r.localOpening.Len()))
+	res := make([]ifaces.QueryID, 0, min(r.ignored.Size(), r.localOpening.Count()))
 
 	for i := 0; i < r.NumRounds(); i++ {
 		allKeys := r.AllLocalOpeningKeysAt(i)
@@ -361,7 +340,7 @@ func (r *QueryByRoundRegister) AllUnignoredLocalOpeningKeys() []ifaces.QueryID {
 }
 
 func (r *QueryByRoundRegister) AllUnignoredInnerProductKeys() []ifaces.QueryID {
-	res := make([]ifaces.QueryID, 0, min(r.ignored.Size(), r.innerProduct.Len()))
+	res := make([]ifaces.QueryID, 0, min(r.ignored.Size(), r.innerProduct.Count()))
 
 	for i := 0; i < r.NumRounds(); i++ {
 		allKeys := r.AllInnerProductKeysAt(i)
@@ -376,7 +355,7 @@ func (r *QueryByRoundRegister) AllUnignoredInnerProductKeys() []ifaces.QueryID {
 }
 
 func (r *QueryByRoundRegister) AllUnignoredInclusionKeys() []ifaces.QueryID {
-	res := make([]ifaces.QueryID, 0, min(r.ignored.Size(), r.inclusion.Len()))
+	res := make([]ifaces.QueryID, 0, min(r.ignored.Size(), r.inclusion.Count()))
 
 	for i := 0; i < r.NumRounds(); i++ {
 		allKeys := r.AllInclusionKeysAt(i)
@@ -391,7 +370,7 @@ func (r *QueryByRoundRegister) AllUnignoredInclusionKeys() []ifaces.QueryID {
 }
 
 func (r *QueryByRoundRegister) AllUnignoredMiMCKeys() []ifaces.QueryID {
-	res := make([]ifaces.QueryID, 0, min(r.ignored.Size(), r.miMC.Len()))
+	res := make([]ifaces.QueryID, 0, min(r.ignored.Size(), r.miMC.Count()))
 
 	for i := 0; i < r.NumRounds(); i++ {
 		allKeys := r.AllMiMCKeysAt(i)
@@ -406,7 +385,7 @@ func (r *QueryByRoundRegister) AllUnignoredMiMCKeys() []ifaces.QueryID {
 }
 
 func (r *QueryByRoundRegister) AllUnignoredPermutationKeys() []ifaces.QueryID {
-	res := make([]ifaces.QueryID, 0, min(r.ignored.Size(), r.permutation.Len()))
+	res := make([]ifaces.QueryID, 0, min(r.ignored.Size(), r.permutation.Count()))
 
 	for i := 0; i < r.NumRounds(); i++ {
 		allKeys := r.AllPermutationKeysAt(i)
@@ -421,7 +400,7 @@ func (r *QueryByRoundRegister) AllUnignoredPermutationKeys() []ifaces.QueryID {
 }
 
 func (r *QueryByRoundRegister) AllUnignoredFixedPermutationKeys() []ifaces.QueryID {
-	res := make([]ifaces.QueryID, 0, min(r.ignored.Size(), r.fixedPermutation.Len()))
+	res := make([]ifaces.QueryID, 0, min(r.ignored.Size(), r.fixedPermutation.Count()))
 
 	for i := 0; i < r.NumRounds(); i++ {
 		allKeys := r.AllFixedPermutationKeysAt(i)
@@ -436,7 +415,7 @@ func (r *QueryByRoundRegister) AllUnignoredFixedPermutationKeys() []ifaces.Query
 }
 
 func (r *QueryByRoundRegister) AllUnignoredUnivariateEvalKeys() []ifaces.QueryID {
-	res := make([]ifaces.QueryID, 0, min(r.ignored.Size(), r.univariateEval.Len()))
+	res := make([]ifaces.QueryID, 0, min(r.ignored.Size(), r.univariateEval.Count()))
 
 	for i := 0; i < r.NumRounds(); i++ {
 		allKeys := r.AllUnivariateEvalKeysAt(i)
@@ -451,7 +430,7 @@ func (r *QueryByRoundRegister) AllUnignoredUnivariateEvalKeys() []ifaces.QueryID
 }
 
 func (r *QueryByRoundRegister) AllUnignoredRangeKeys() []ifaces.QueryID {
-	res := make([]ifaces.QueryID, 0, min(r.ignored.Size(), r.rangee.Len()))
+	res := make([]ifaces.QueryID, 0, min(r.ignored.Size(), r.rangee.Count()))
 
 	for i := 0; i < r.NumRounds(); i++ {
 		allKeys := r.AllRangeKeysAt(i)
