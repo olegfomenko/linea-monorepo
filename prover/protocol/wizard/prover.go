@@ -470,7 +470,7 @@ func (run *ProverRuntime) goNextRound() {
 		Then, make sure all the query parameters have been set
 		during the rounds we are closing
 	*/
-	toBeParametrized := run.Spec.QueriesParams.All.AllKeysAt(run.currRound)
+	toBeParametrized := run.Spec.QueriesParams.AllKeysAt(run.currRound)
 	run.QueriesParams.MustExists(toBeParametrized...)
 
 	// Counts the transcript size of the round and the number of field
@@ -512,7 +512,7 @@ func (run *ProverRuntime) goNextRound() {
 			Also include the prover's allegations for all evaluations
 		*/
 		start = run.FS.TranscriptSize
-		paramsToFS := run.Spec.QueriesParams.All.AllKeysAt(run.currRound)
+		paramsToFS := run.Spec.QueriesParams.AllKeysAt(run.currRound)
 		for _, qName := range paramsToFS {
 			// Implicitly, this will panic whenever we start supporting
 			// a new type of query params
@@ -595,7 +595,7 @@ func (run *ProverRuntime) AssignInnerProduct(name ifaces.QueryID, ys ...field.El
 	}
 
 	// Make sure, it is done at the right round
-	run.Spec.QueriesParams.InnerProduct.MustBeInRound(run.currRound, name)
+	run.Spec.QueriesParams.MustBeInRound(run.currRound, name)
 
 	param := query.NewInnerProductParams(ys...)
 	run.QueriesParams.InsertNew(name, param)
@@ -618,10 +618,10 @@ func (run *ProverRuntime) AssignUnivariate(name ifaces.QueryID, x field.Element,
 	defer run.lock.Unlock()
 
 	// Make sure, it is done at the right round
-	run.Spec.QueriesParams.UnivariateEval.MustBeInRound(run.currRound, name)
+	run.Spec.QueriesParams.MustBeInRound(run.currRound, name)
 
 	// Check the length of ys
-	q := run.Spec.QueriesParams.UnivariateEval.Data(name).(query.UnivariateEval)
+	q := run.Spec.QueriesParams.Data(name).(query.UnivariateEval)
 	if len(q.Pols) != len(ys) {
 		utils.Panic("Query expected ys = %v but got %v", len(q.Pols), len(ys))
 	}
@@ -637,7 +637,7 @@ func (run *ProverRuntime) GetUnivariateEval(name ifaces.QueryID) query.Univariat
 	// Global prover locks for accessing the maps
 	run.lock.Lock()
 	defer run.lock.Unlock()
-	return run.Spec.QueriesParams.UnivariateEval.Data(name).(query.UnivariateEval)
+	return run.Spec.QueriesParams.Data(name).(query.UnivariateEval)
 }
 
 // GetUnivariateParams returns the parameters of a univariate evaluation (i.e:
@@ -663,7 +663,7 @@ func (run *ProverRuntime) AssignLocalPoint(name ifaces.QueryID, y field.Element)
 	defer run.lock.Unlock()
 
 	// Make sure, it is done at the right round
-	run.Spec.QueriesParams.LocalOpening.MustBeInRound(run.currRound, name)
+	run.Spec.QueriesParams.MustBeInRound(run.currRound, name)
 
 	// Adds it to the assignments
 	params := query.NewLocalOpeningParams(y)
@@ -677,7 +677,7 @@ func (run *ProverRuntime) GetLocalPointEval(name ifaces.QueryID) query.LocalOpen
 	// Global prover locks for accessing the maps
 	run.lock.Lock()
 	defer run.lock.Unlock()
-	return run.Spec.QueriesParams.LocalOpening.Data(name).(query.LocalOpening)
+	return run.Spec.QueriesParams.Data(name).(query.LocalOpening)
 }
 
 // GetLocalPointEvalParams returns the parameters of a univariate evaluation

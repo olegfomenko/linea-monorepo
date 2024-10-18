@@ -180,7 +180,7 @@ func (run *VerifierRuntime) generateAllRandomCoins() {
 				/*
 					Also include the prover's allegations for all evaluations
 				*/
-				queries := run.Spec.QueriesParams.All.AllKeysAt(currRound - 1)
+				queries := run.Spec.QueriesParams.AllKeysAt(currRound - 1)
 				for _, qName := range queries {
 					// Implicitly, this will panic whenever we start supporting
 					// a new type of query params
@@ -266,7 +266,7 @@ GetUnivariateEval returns a registered [query.UnivariateEval]. Panic if not foun
 Deprecated: get it from the CompiledIOP instead
 */
 func (run *VerifierRuntime) GetUnivariateEval(name ifaces.QueryID) query.UnivariateEval {
-	return run.Spec.QueriesParams.UnivariateEval.Data(name).(query.UnivariateEval)
+	return run.Spec.QueriesParams.Data(name).(query.UnivariateEval)
 }
 
 // GetColumn returns a column by name. The status of the columns must be

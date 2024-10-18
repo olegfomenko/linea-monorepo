@@ -25,24 +25,13 @@ func deriveName[R ~string](context string, q ifaces.QueryID, name string) R {
 Compiles the local constraints
 */
 func Compile(comp *wizard.CompiledIOP) {
-	numRounds := comp.NumRounds()
-
 	/*
 		First compile all local constraints
 	*/
-	for i := 0; i < numRounds; i++ {
-		queries := comp.QueriesNoParams.LocalConstraint.AllKeysAt(i)
 
-		for _, qName := range queries {
+	for _, qName := range comp.QueriesNoParams.AllUnignoredLocalConstraintKeys() {
+		q := comp.QueriesNoParams.Data(qName).(query.LocalConstraint)
+		ReduceLocalConstraint(comp, q, comp.QueriesNoParams.Round(qName))
 
-			// Skip if it was already compiled
-			if comp.QueriesNoParams.LocalConstraint.IsIgnored(qName) {
-				continue
-			}
-
-			if q_, ok := comp.QueriesNoParams.LocalConstraint.Data(qName).(query.LocalConstraint); ok {
-				ReduceLocalConstraint(comp, q_, i)
-			}
-		}
 	}
 }

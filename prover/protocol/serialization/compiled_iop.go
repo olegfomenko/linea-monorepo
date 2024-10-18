@@ -41,8 +41,8 @@ func SerializeCompiledIOP(comp *wizard.CompiledIOP) ([]byte, error) {
 
 		var (
 			cols         = comp.Columns.AllHandlesAtRound(round)
-			qParams      = comp.QueriesParams.All.AllKeysAt(round)
-			qNoParams    = comp.QueriesNoParams.All.AllKeysAt(round)
+			qParams      = comp.QueriesParams.AllKeysAt(round)
+			qNoParams    = comp.QueriesNoParams.AllKeysAt(round)
 			coins        = comp.Coins.AllKeysAt(round)
 			rawCols      = make([]json.RawMessage, len(cols))
 			rawQParams   = make([]json.RawMessage, len(qParams))
@@ -59,7 +59,7 @@ func SerializeCompiledIOP(comp *wizard.CompiledIOP) ([]byte, error) {
 		}
 
 		for i, qName := range qParams {
-			q := comp.QueriesParams.All.Data(qName)
+			q := comp.QueriesParams.Data(qName)
 			// It's important that we provide a pointer to the query rather than
 			// the query itself. Otherwise, the serializer will resolve the type
 			// as the concrete type and we want it to resolve the Query interface
@@ -72,7 +72,7 @@ func SerializeCompiledIOP(comp *wizard.CompiledIOP) ([]byte, error) {
 		}
 
 		for i, qName := range qNoParams {
-			q := comp.QueriesNoParams.All.Data(qName)
+			q := comp.QueriesNoParams.Data(qName)
 			// It's important that we provide a pointer to the query rather than
 			// the query itself. Otherwise, the serializer will resolve the type
 			// as the concrete type and we want it to resolve the Query interface

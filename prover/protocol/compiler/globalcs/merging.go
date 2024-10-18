@@ -60,9 +60,9 @@ func accumulateConstraints(comp *wizard.CompiledIOP) (mergingCtx, bool) {
 		RatioBuckets: make(map[int][]*symbolic.Expression),
 	}
 
-	for _, qName := range comp.QueriesNoParams.GlobalConstraint.AllUnignoredKeys() {
+	for _, qName := range comp.QueriesNoParams.AllUnignoredGlobalConstraintKeys() {
 		// Filter only the global constraints
-		cs := comp.QueriesNoParams.GlobalConstraint.Data(qName).(query.GlobalConstraint)
+		cs := comp.QueriesNoParams.Data(qName).(query.GlobalConstraint)
 
 		// For the first iteration, the domain size is unset so we need to initialize
 		// it. This works because the domain size of a constraint cannot legally

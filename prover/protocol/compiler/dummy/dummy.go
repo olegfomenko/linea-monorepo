@@ -35,8 +35,8 @@ func Compile(comp *wizard.CompiledIOP) {
 		The filter returns true, as long as the query has not been marked as
 		already compiled. This is to avoid them being compiled a second time.
 	*/
-	queriesParamsToCompile := comp.QueriesParams.All.AllUnignoredKeys()
-	queriesNoParamsToCompile := comp.QueriesNoParams.All.AllUnignoredKeys()
+	queriesParamsToCompile := comp.QueriesParams.AllUnignoredKeys()
+	queriesNoParamsToCompile := comp.QueriesNoParams.AllUnignoredKeys()
 
 	for i := 0; i < numRounds; i++ {
 		// Mark all the commitments as messages
@@ -98,7 +98,7 @@ func Compile(comp *wizard.CompiledIOP) {
 			for i := start; i < stop; i++ {
 				name := queriesParamsToCompile[i]
 				lock.Lock()
-				q := comp.QueriesParams.All.Data(name)
+				q := comp.QueriesParams.Data(name)
 				lock.Unlock()
 				if err := q.Check(run); err != nil {
 					lock.Lock()
@@ -118,7 +118,7 @@ func Compile(comp *wizard.CompiledIOP) {
 			for i := start; i < stop; i++ {
 				name := queriesNoParamsToCompile[i]
 				lock.Lock()
-				q := comp.QueriesNoParams.All.Data(name)
+				q := comp.QueriesNoParams.Data(name)
 				lock.Unlock()
 				if err := q.Check(run); err != nil {
 					lock.Lock()

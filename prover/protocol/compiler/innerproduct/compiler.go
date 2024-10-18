@@ -36,11 +36,11 @@ func Compile(comp *wizard.CompiledIOP) {
 		proverTask proverTask
 	)
 
-	for _, qName := range comp.QueriesParams.InnerProduct.AllUnignoredKeys() {
-		q := comp.QueriesParams.InnerProduct.Data(qName).(query.InnerProduct)
+	for _, qName := range comp.QueriesParams.AllUnignoredInnerProductKeys() {
+		q := comp.QueriesParams.Data(qName).(query.InnerProduct)
 
 		comp.QueriesParams.MarkAsIgnored(qName)
-		round = utils.Max(round, comp.QueriesParams.InnerProduct.Round(qName))
+		round = utils.Max(round, comp.QueriesParams.Round(qName))
 		size := q.A.Size()
 
 		if _, ok := queryMap[size]; !ok {

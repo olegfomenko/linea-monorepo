@@ -270,16 +270,16 @@ func (b *Builder) equalizeRounds(numRounds int) {
 	/*
 		Check and reserve for queries that don't take runtime parameters
 	*/
-	if comp.QueriesNoParams.All.NumRounds() > numRounds {
-		utils.Panic("Bug : numRounds is %v but %v rounds are registered for the QueriesNoParams. %v", numRounds, comp.QueriesNoParams.All.NumRounds(), helpMsg)
+	if comp.QueriesNoParams.NumRounds() > numRounds {
+		utils.Panic("Bug : numRounds is %v but %v rounds are registered for the QueriesNoParams. %v", numRounds, comp.QueriesNoParams.NumRounds(), helpMsg)
 	}
 	comp.QueriesNoParams.ReserveFor(numRounds)
 
 	/*
 		Check and reserve for the queries that takes runtime parameters
 	*/
-	if comp.QueriesParams.All.NumRounds() > numRounds {
-		utils.Panic("Bug : numRounds is %v but %v rounds are registered for the QueriesParams. %v", numRounds, comp.QueriesParams.All.NumRounds(), helpMsg)
+	if comp.QueriesParams.NumRounds() > numRounds {
+		utils.Panic("Bug : numRounds is %v but %v rounds are registered for the QueriesParams. %v", numRounds, comp.QueriesParams.NumRounds(), helpMsg)
 	}
 	comp.QueriesParams.ReserveFor(numRounds)
 

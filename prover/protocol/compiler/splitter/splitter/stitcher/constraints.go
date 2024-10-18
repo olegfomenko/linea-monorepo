@@ -23,10 +23,10 @@ func (ctx stitchingContext) constraints() {
 func (ctx stitchingContext) LocalOpening() {
 
 	// Ignore the LocalOpening queries over the subColumns.
-	for _, qName := range ctx.comp.QueriesParams.LocalOpening.AllUnignoredKeys() {
-		q := ctx.comp.QueriesParams.LocalOpening.Data(qName).(query.LocalOpening)
+	for _, qName := range ctx.comp.QueriesParams.AllUnignoredLocalOpeningKeys() {
+		q := ctx.comp.QueriesParams.Data(qName).(query.LocalOpening)
 
-		round := ctx.comp.QueriesParams.LocalOpening.Round(q.ID)
+		round := ctx.comp.QueriesParams.Round(q.ID)
 
 		if q.Pol.Size() < ctx.MinSize {
 			//sanity-check: column should be public
@@ -61,11 +61,11 @@ func (ctx stitchingContext) LocalOpening() {
 }
 
 func (ctx stitchingContext) LocalGlobalConstraints() {
-	for _, qName := range ctx.comp.QueriesNoParams.All.AllUnignoredKeys() {
+	for _, qName := range ctx.comp.QueriesNoParams.AllUnignoredKeys() {
 
-		q := ctx.comp.QueriesNoParams.All.Data(qName)
+		q := ctx.comp.QueriesNoParams.Data(qName)
 		// round of definition of the query to compile
-		round := ctx.comp.QueriesNoParams.All.Round(qName)
+		round := ctx.comp.QueriesNoParams.Round(qName)
 
 		var board symbolic.ExpressionBoard
 

@@ -349,13 +349,13 @@ func extractTargetQuery(comp *wizard.CompiledIOP) (res query.UnivariateEval, fou
 
 	// Tracks the uncompiled queries. There should be only one at the end.
 	// Scans the other no params (we expect none)
-	uncompiledQueries := append([]ifaces.QueryID{}, comp.QueriesNoParams.All.AllUnignoredKeys()...)
+	uncompiledQueries := append([]ifaces.QueryID{}, comp.QueriesNoParams.AllUnignoredKeys()...)
 	if len(uncompiledQueries) > 0 {
 		utils.Panic("Expected no unparametrized queries, found %v\n", uncompiledQueries)
 	}
 
 	// Scans the univariate evaluatations : there should be only a single one
-	uncompiledQueries = append([]ifaces.QueryID{}, comp.QueriesParams.All.AllUnignoredKeys()...)
+	uncompiledQueries = append([]ifaces.QueryID{}, comp.QueriesParams.AllUnignoredKeys()...)
 
 	// If no queries are found, then there is nothing to compile. Return a
 	// a negative found any to notify the caller context.
@@ -369,7 +369,7 @@ func extractTargetQuery(comp *wizard.CompiledIOP) (res query.UnivariateEval, fou
 		utils.Panic("Expected (exactly) one query, found %v (%v)\n", len(uncompiledQueries), uncompiledQueries)
 	}
 
-	res = comp.QueriesParams.UnivariateEval.Data(uncompiledQueries[0]).(query.UnivariateEval)
+	res = comp.QueriesParams.Data(uncompiledQueries[0]).(query.UnivariateEval)
 
 	// And mark it the query as compiled
 	comp.QueriesParams.MarkAsIgnored(res.QueryID)

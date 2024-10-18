@@ -139,13 +139,9 @@ func captureLookupTables(comp *wizard.CompiledIOP) mainLookupCtx {
 	}
 
 	// Collect all the lookup queries into "lookups"
-	for _, qName := range comp.QueriesNoParams.Inclusion.AllUnignoredKeys() {
-
+	for _, qName := range comp.QueriesNoParams.AllUnignoredInclusionKeys() {
 		// Filter out non lookup queries
-		lookup, ok := comp.QueriesNoParams.Inclusion.Data(qName).(query.Inclusion)
-		if !ok {
-			continue
-		}
+		lookup := comp.QueriesNoParams.Data(qName).(query.Inclusion)
 
 		// This ensures that the lookup query is not used again in the
 		// compilation process. We know that the query was already ignored at
@@ -192,7 +188,7 @@ func captureLookupTables(comp *wizard.CompiledIOP) mainLookupCtx {
 
 		ctx.includedFilters[tableName] = append(ctx.includedFilters[tableName], includedFilter)
 		ctx.checkedTables[tableName] = append(ctx.checkedTables[tableName], checkedTable)
-		ctx.rounds[tableName] = max(ctx.rounds[tableName], comp.QueriesNoParams.Inclusion.Round(lookup.ID))
+		ctx.rounds[tableName] = max(ctx.rounds[tableName], comp.QueriesNoParams.Round(lookup.ID))
 
 	}
 

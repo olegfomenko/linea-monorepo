@@ -151,18 +151,13 @@ func createMptsCtx(comp *wizard.CompiledIOP, targetSize int) mptsCtx {
 	// Scan the multivariate evaluatation.
 	// Every other type of parametrizable queries (inner-product, local opening)
 	// should have been compiled at this point.
-	for _, qName := range comp.QueriesParams.UnivariateEval.AllKeys() {
-
-		if comp.QueriesParams.IsIgnored(qName) {
-			continue
-		}
-
+	for _, qName := range comp.QueriesParams.AllUnignoredUnivariateEvalKeys() {
 		// Skip if it was already compiled, else insert
 		if comp.QueriesParams.MarkAsIgnored(qName) {
 			continue
 		}
 
-		q := comp.QueriesParams.UnivariateEval.Data(qName).(query.UnivariateEval)
+		q := comp.QueriesParams.Data(qName).(query.UnivariateEval)
 		hs = append(hs, qName)
 
 		/*
@@ -399,7 +394,7 @@ func (ctx mptsCtx) verifier(run *wizard.VerifierRuntime) error {
 	ys, hs := ctx.getYsHs(
 		run.GetUnivariateParams,
 		func(qName ifaces.QueryID) query.UnivariateEval {
-			return run.Spec.QueriesParams.UnivariateEval.Data(qName).(query.UnivariateEval)
+			return run.Spec.QueriesParams.Data(qName).(query.UnivariateEval)
 		},
 	)
 

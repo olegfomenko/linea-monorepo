@@ -410,13 +410,13 @@ func DeserializeValue(data json.RawMessage, mode mode, t reflect.Type, comp *wiz
 			// know where in where to look it for in compiled IOP. Instead, we
 			// go the easy way and just try in both QueriesParams and
 			// QueriesNoParams.
-			if comp.QueriesParams.All.Exists(queryID) {
-				q := comp.QueriesParams.All.Data(queryID)
+			if comp.QueriesParams.Exists(queryID) {
+				q := comp.QueriesParams.Data(queryID)
 				return reflect.ValueOf(q), nil
 			}
 
-			if comp.QueriesNoParams.All.Exists(queryID) {
-				q := comp.QueriesNoParams.All.Data(queryID)
+			if comp.QueriesNoParams.Exists(queryID) {
+				q := comp.QueriesNoParams.Data(queryID)
 				return reflect.ValueOf(q), nil
 			}
 

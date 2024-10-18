@@ -50,8 +50,8 @@ func testLocalOpening(t *testing.T, gen func() (wizard.DefineFunc, wizard.Prover
 
 	assert.NoError(t, err)
 
-	for _, qName := range comp.QueriesNoParams.All.AllKeysAt(0) {
-		switch q := comp.QueriesParams.All.Data(qName).(type) {
+	for _, qName := range comp.QueriesNoParams.AllKeysAt(0) {
+		switch q := comp.QueriesParams.Data(qName).(type) {
 		case query.LocalOpening:
 			t.Logf("query %v - with pol %v", q.ID, q.Pol.GetColID())
 		case query.UnivariateEval:

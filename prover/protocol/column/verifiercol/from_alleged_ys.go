@@ -47,8 +47,8 @@ func NewFromYs(comp *wizard.CompiledIOP, q query.UnivariateEval, ranges []ifaces
 	}
 
 	// Make sure that the query is indeed registered in the current wizard.
-	comp.QueriesParams.UnivariateEval.MustExists(q.QueryID)
-	round := comp.QueriesParams.UnivariateEval.Round(q.QueryID)
+	comp.QueriesParams.MustExists(q.QueryID)
+	round := comp.QueriesParams.Round(q.QueryID)
 
 	res := FromYs{
 		Ranges: ranges,
