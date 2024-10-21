@@ -5,7 +5,7 @@ go 1.22.7
 toolchain go1.23.0
 
 require (
-	github.com/consensys/bavard v0.1.15
+	github.com/consensys/bavard v0.1.22
 	github.com/consensys/compress v0.2.5
 	github.com/consensys/gnark v0.11.1-0.20240910135928-e8cb61d0be1d
 	github.com/consensys/gnark-crypto v0.14.1-0.20240909204211-78a6dc12799c
@@ -115,4 +115,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/consensys/gnark-crypto => github.com/omegatymbjiep/gnark-crypto v0.0.0-20241021115525-e4095f97d44b
+replace github.com/consensys/gnark-crypto => github.com/omegatymbjiep/gnark-crypto v0.0.0-20241022175604-4556f4637333
