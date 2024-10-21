@@ -6,6 +6,7 @@ import (
 	"runtime"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-377/fr/fft"
+	"github.com/consensys/gnark-crypto/ecc/bls12-377/fr"
 	"github.com/consensys/linea-monorepo/prover/maths/common/smartvectors"
 	"github.com/consensys/linea-monorepo/prover/maths/common/vector"
 	"github.com/consensys/linea-monorepo/prover/maths/field"
@@ -14,14 +15,14 @@ import (
 )
 
 func TransversalHash(
-	// the Ag for ring-sis
+// the Ag for ring-sis
 	ag [][]field.Element,
-	// A non-transposed list of columns
-	// All of the same length
+// A non-transposed list of columns
+// All of the same length
 	pols []smartvectors.SmartVector,
-	// The precomputed twiddle cosets for the forward FFT
+// The precomputed twiddle cosets for the forward FFT
 	twiddleCosets []field.Element,
-	// The domain for the final inverse-FFT
+// The domain for the final inverse-FFT
 	domain *fft.Domain,
 ) []field.Element {
 
@@ -163,7 +164,7 @@ func zeroize(buf []field.Element) {
 func mulModAcc(res, a, b []field.Element) {
 	var tmp field.Element
 	for i := range res {
-		tmp.Mul(&a[i], &b[i])
+		fr.Mul(&tmp, &a[i], &b[i])
 		res[i].Add(&res[i], &tmp)
 	}
 }
