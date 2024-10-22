@@ -8,7 +8,6 @@ import (
 
 	"github.com/consensys/linea-monorepo/prover/utils"
 	"github.com/pkg/profile"
-	"github.com/sirupsen/logrus"
 	"github.com/consensys/linea-monorepo/prover/utils/parallel"
 )
 
@@ -18,11 +17,11 @@ var SKIP_PROFILING = true
 // The path should neither start nor end with a "/".
 func ProfileTrace(name string, profiled, traced bool, fn func()) {
 
-	if SKIP_PROFILING {
-		logrus.Warnf("Skipping the profiling globally")
-		fn()
-		return
-	}
+	//if SKIP_PROFILING {
+	//	logrus.Warnf("Skipping the profiling globally")
+	//	fn()
+	//	return
+	//}
 
 	var pprof interface{ Stop() }
 
