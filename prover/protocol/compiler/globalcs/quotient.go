@@ -358,11 +358,14 @@ func (ctx *quotientCtx) Run(run *wizard.ProverRuntime) {
 			stopTimer := profiling.LogTimer("ReEvaluate %v pols of size %v on coset %v/%v", len(handles), ctx.DomainSize, share, ratio)
 
 			parallel.ExecuteFromChan(len(roots), func(wg *sync.WaitGroup, indexChan chan int) {
+				batchSize := 0
 
 				localPool := mempool.WrapsWithMemCache(largePool)
 				defer localPool.TearDown()
 
 				for k := range indexChan {
+					batchSize++
+
 					root := roots[k]
 					name := root.GetColID()
 
@@ -381,14 +384,18 @@ func (ctx *quotientCtx) Run(run *wizard.ProverRuntime) {
 
 					wg.Done()
 				}
+
+				parallel.AddParallelCallTrace(len(roots), batchSize, 1)
 			})
 
 			parallel.ExecuteFromChan(len(handles), func(wg *sync.WaitGroup, indexChan chan int) {
+				batchSize := 0
 
 				localPool := mempool.WrapsWithMemCache(largePool)
 				defer localPool.TearDown()
 
 				for k := range indexChan {
+					batchSize++
 
 					pol := handles[k]
 					// short-path, the column is a purely Shifted(Natural) or a Natural
@@ -439,6 +446,8 @@ func (ctx *quotientCtx) Run(run *wizard.ProverRuntime) {
 
 					wg.Done()
 				}
+
+				parallel.AddParallelCallTrace(len(roots), batchSize, 1)
 			})
 
 			stopTimer()

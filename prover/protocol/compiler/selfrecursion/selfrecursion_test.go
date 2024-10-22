@@ -19,6 +19,7 @@ import (
 	"github.com/consensys/linea-monorepo/prover/protocol/wizard"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
+	"github.com/consensys/linea-monorepo/prover/utils/parallel"
 )
 
 // returns a dummy column name
@@ -257,6 +258,8 @@ func TestSelfRecursionMultiLayered(t *testing.T) {
 		err := wizard.Verify(comp, proof)
 		require.NoError(subT, err)
 	})
+
+	parallel.WriteParallelCallTraces()
 }
 
 // Test for committing to the precomputed polynomials

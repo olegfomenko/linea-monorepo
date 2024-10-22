@@ -91,7 +91,10 @@ func (b *ExpressionBoard) Evaluate(inputs []sv.SmartVector, p ...mempool.MemPool
 	numChunks := totalSize / MaxChunkSize
 	res := make([]field.Element, totalSize)
 
+	batchSize := 0
+
 	parallel.ExecuteFromChan(numChunks, func(wg *sync.WaitGroup, idChan chan int) {
+		batchSize++
 
 		var pool []mempool.MemPool
 		if len(p) > 0 {
@@ -127,6 +130,8 @@ func (b *ExpressionBoard) Evaluate(inputs []sv.SmartVector, p ...mempool.MemPool
 
 			wg.Done()
 		}
+
+		parallel.AddParallelCallTrace(numChunks, batchSize, 1)
 
 		if len(p) > 0 {
 			if sa, ok := pool[0].(*mempool.SliceArena); ok {

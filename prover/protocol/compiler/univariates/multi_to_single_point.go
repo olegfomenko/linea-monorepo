@@ -245,6 +245,7 @@ func (ctx mptsCtx) accumulateQuotients(run *wizard.ProverRuntime) {
 	mainWg.Add(runtime.NumCPU())
 
 	parallel.ExecuteFromChan(len(ctx.polys), func(wg *sync.WaitGroup, indexChan chan int) {
+		batchSize := 0
 
 		var (
 			pool = mempool.WrapsWithMemCache(pool)
@@ -257,6 +258,7 @@ func (ctx mptsCtx) accumulateQuotients(run *wizard.ProverRuntime) {
 		defer pool.TearDown()
 
 		for i := range indexChan {
+			batchSize++
 
 			var (
 				polHandle  = ctx.polys[i]
@@ -338,6 +340,8 @@ func (ctx mptsCtx) accumulateQuotients(run *wizard.ProverRuntime) {
 
 			wg.Done()
 		}
+
+		parallel.AddParallelCallTrace(len(ctx.polys), batchSize, 1)
 
 		subQuotientReg = sv.PolyAdd(subQuotientReg, sv.NewConstant(subQuotientCnst, 1))
 
@@ -603,9 +607,9 @@ func (ctx mptsCtx) gnarkVerify(api frontend.API, c *wizard.WizardVerifierCircuit
 
 // collect all the alleged opening values in a map, so that we can utilize them later.
 func (ctx mptsCtx) getYsHs(
-	// func that can be used to return the parameters of a given query
+// func that can be used to return the parameters of a given query
 	getParam func(ifaces.QueryID) query.UnivariateEvalParams,
-	// func that can be used to return the query's metadata given its name
+// func that can be used to return the query's metadata given its name
 	getQuery func(ifaces.QueryID) query.UnivariateEval,
 
 ) (

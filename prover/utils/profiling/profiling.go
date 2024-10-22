@@ -9,6 +9,7 @@ import (
 	"github.com/consensys/linea-monorepo/prover/utils"
 	"github.com/pkg/profile"
 	"github.com/sirupsen/logrus"
+	"github.com/consensys/linea-monorepo/prover/utils/parallel"
 )
 
 var SKIP_PROFILING = true
@@ -66,4 +67,6 @@ func ProfileTrace(name string, profiled, traced bool, fn func()) {
 	}
 
 	fn()
+
+	parallel.WriteParallelCallTraces()
 }
