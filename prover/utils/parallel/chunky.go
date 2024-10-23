@@ -36,16 +36,17 @@ func ExecuteChunky(nbIterations int, work func(start, stop int), numcpus ...int)
 
 	// Each goroutine consumes the jobChan to
 	for p := 0; p < numcpu; p++ {
-		batchSize := 0
 		go func() {
+			batchSize := 0
+
 			for i := range jobChan {
 				batchSize++
 				work(i, i+1)
 				wg.Done()
 			}
-		}()
 
-		AddParallelCallTrace(nbIterations, batchSize, 2)
+			AddParallelCallTrace(nbIterations, batchSize, 2)
+		}()
 	}
 
 	wg.Wait()
