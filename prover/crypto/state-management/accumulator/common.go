@@ -12,7 +12,13 @@ import (
 // Generic hashing for object satisfying the io.WriterTo interface
 func hash[T io.WriterTo](conf *smt.Config, m T) Bytes32 {
 	hasher := conf.HashFunc()
-	m.WriteTo(hasher)
+	_, err := m.WriteTo(hasher)
+
+	if err != nil {
+		// debug
+		panic(err)
+	}
+
 	Bytes32 := hasher.Sum(nil)
 	return AsBytes32(Bytes32)
 }
