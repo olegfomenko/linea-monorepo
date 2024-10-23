@@ -7,6 +7,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const IterationThreshold = 32
+
 // Execute in parallel. This implementation is optimized for the case where
 // the workload is a sequence of unbalanced and long computation time jobs.
 func ExecuteChunky(nbIterations int, work func(start, stop int), numcpus ...int) {
@@ -17,7 +19,7 @@ func ExecuteChunky(nbIterations int, work func(start, stop int), numcpus ...int)
 	}
 
 	// Then just call the trivial function
-	if nbIterations < numcpu {
+	if nbIterations < numcpu || nbIterations <= IterationThreshold {
 		logrus.Debugf("Loss in parallelization time numpcpu = %v and nbIterator = %v", numcpu, nbIterations)
 		Execute(nbIterations, work, numcpu)
 		return
