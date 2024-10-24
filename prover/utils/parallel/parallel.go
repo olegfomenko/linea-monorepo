@@ -28,6 +28,12 @@ func Execute(nbIterations int, work func(int, int), maxCpus ...int) {
 	extraTasks := nbIterations - (nbTasks * nbIterationsPerCpus)
 	extraTasksOffset := 0
 
+	if nbTasks <= 32 {
+		// no go routines
+		work(0, nbIterations)
+		return
+	}
+
 	var (
 		panicTrace []byte
 		panicMsg   any
