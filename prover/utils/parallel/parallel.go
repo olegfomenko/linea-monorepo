@@ -8,6 +8,8 @@ import (
 	"github.com/consensys/linea-monorepo/prover/utils"
 )
 
+const nbIterationsThreshold = 32
+
 // Execute process in parallel the work function
 func Execute(nbIterations int, work func(int, int), maxCpus ...int) {
 
@@ -28,7 +30,7 @@ func Execute(nbIterations int, work func(int, int), maxCpus ...int) {
 	extraTasks := nbIterations - (nbTasks * nbIterationsPerCpus)
 	extraTasksOffset := 0
 
-	if nbTasks <= 32 {
+	if nbTasks == 1 || nbIterations <= nbIterationsThreshold {
 		// no go routines
 		work(0, nbIterations)
 		return
