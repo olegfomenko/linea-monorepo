@@ -400,7 +400,6 @@ func (ctx *quotientCtx) Run(run *wizard.ProverRuntime) {
 						polName := pol.GetColID()
 						res := sv.SoftRotate(reevaledRoot.(sv.SmartVector), shifted.Offset)
 						computedReeval.Store(polName, res)
-						wg.Done()
 						continue
 					}
 
