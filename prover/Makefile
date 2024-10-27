@@ -82,7 +82,7 @@ bin/controller:
 bin/prover:
 	mkdir -p bin
 	rm -f $@
-	go build -o $@ ./cmd/prover
+	go build -tags "purego" -o $@ ./cmd/prover
 
 ##
 ##	Compiles the state-manager inspector
