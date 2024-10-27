@@ -300,7 +300,9 @@ func (ctx *quotientCtx) Run(run *wizard.ProverRuntime) {
 	for i := 0; i < maxRatio; i++ {
 
 		// use sync map to store the coset evaluated polynomials
-		computedReeval := sync.Map{}
+		computedReeval := make(map[ifaces.ColID]sv.SmartVector)
+		computedReevalMu := sync.RWMutex{}
+
 		stopTimer = profiling.LogTimer("Creation of omega")
 
 		/*
@@ -366,7 +368,9 @@ func (ctx *quotientCtx) Run(run *wizard.ProverRuntime) {
 				root := roots[k]
 				name := root.GetColID()
 
-				_, found := computedReeval.Load(name)
+				computedReevalMu.RLock()
+				_, found := computedReeval[name]
+				computedReevalMu.RUnlock()
 
 				if found {
 					// it was already computed in a previous iteration of `j`
@@ -376,7 +380,10 @@ func (ctx *quotientCtx) Run(run *wizard.ProverRuntime) {
 				// else it's the first value of j that sees it. so we compute the
 				// coset reevaluation.
 				reevaledRoot := sv.FFT(coeffs[name], fft.DIT, false, ratio, share, localPool)
-				computedReeval.Store(name, reevaledRoot)
+
+				computedReevalMu.Lock()
+				computedReeval[name] = reevaledRoot
+				computedReevalMu.Unlock()
 			})
 
 			ppool.ExecutePoolChunky(len(handles), func(k int) {
@@ -392,7 +399,9 @@ func (ctx *quotientCtx) Run(run *wizard.ProverRuntime) {
 					root := rootCols[0]
 					name := root.GetColID()
 
-					reevaledRoot, found := computedReeval.Load(name)
+					computedReevalMu.RLock()
+					reevaledRoot, found := computedReeval[name]
+					computedReevalMu.RUnlock()
 
 					if !found {
 						// it is expected to computed in the above loop
@@ -408,14 +417,20 @@ func (ctx *quotientCtx) Run(run *wizard.ProverRuntime) {
 					if shifted, isShifted := pol.(column.Shifted); isShifted {
 						polName := pol.GetColID()
 						res := sv.SoftRotate(reevaledRoot.(sv.SmartVector), shifted.Offset)
-						computedReeval.Store(polName, res)
+
+						computedReevalMu.Lock()
+						computedReeval[polName] = res
+						computedReevalMu.Unlock()
 						return
 					}
 
 				}
 
 				name := pol.GetColID()
-				_, ok := computedReeval.Load(name)
+
+				computedReevalMu.RLock()
+				_, ok := computedReeval[name]
+				computedReevalMu.RUnlock()
 				if ok {
 					return
 				}
@@ -425,8 +440,9 @@ func (ctx *quotientCtx) Run(run *wizard.ProverRuntime) {
 				}
 
 				res := sv.FFT(coeffs[name], fft.DIT, false, ratio, share, localPool)
-				computedReeval.Store(name, res)
-
+				computedReevalMu.Lock()
+				computedReeval[name] = res
+				computedReevalMu.Unlock()
 			})
 
 			stopTimer()
@@ -449,7 +465,7 @@ func (ctx *quotientCtx) Run(run *wizard.ProverRuntime) {
 				case ifaces.Column:
 					//name := metadata.GetColID()
 					//evalInputs[k] = computedReeval[name]
-					value, _ := computedReeval.Load(metadata.GetColID())
+					value, _ := computedReeval[metadata.GetColID()]
 					evalInputs[k] = value.(sv.SmartVector)
 				case coin.Info:
 					evalInputs[k] = sv.NewConstant(run.GetRandomCoinField(metadata.Name), ctx.DomainSize)
@@ -482,15 +498,11 @@ func (ctx *quotientCtx) Run(run *wizard.ProverRuntime) {
 
 		}
 
-		// Forcefuly clean the memory for the computed reevals
-		computedReeval.Range(func(k, v interface{}) bool {
-
+		for _, v := range computedReeval {
 			if pooled, ok := v.(*sv.Pooled); ok {
 				pooled.Free(largePool)
 			}
+		}
 
-			computedReeval.Delete(k)
-			return true
-		})
 	}
 }
