@@ -206,7 +206,6 @@ func (ctx *quotientCtx) Run(run *wizard.ProverRuntime) {
 		lock      = sync.Mutex{}
 		lockRun   = sync.Mutex{}
 		pool      = mempool.CreateFromSyncPool(symbolic.MaxChunkSize).Prewarm(runtime.GOMAXPROCS(0) * ctx.MaxNbExprNode)
-		largePool = mempool.CreateFromSyncPool(ctx.DomainSize).Prewarm(len(ctx.AllInvolvedColumns))
 	)
 
 	if ctx.DomainSize >= GC_DOMAIN_SIZE {
@@ -360,9 +359,6 @@ func (ctx *quotientCtx) Run(run *wizard.ProverRuntime) {
 			stopTimer := profiling.LogTimer("ReEvaluate %v pols of size %v on coset %v/%v", len(handles), ctx.DomainSize, share, ratio)
 
 			ppool.ExecutePoolChunky(len(roots), func(k int) {
-				localPool := mempool.WrapsWithMemCache(largePool)
-				defer localPool.TearDown()
-
 				root := roots[k]
 				name := root.GetColID()
 
@@ -375,14 +371,11 @@ func (ctx *quotientCtx) Run(run *wizard.ProverRuntime) {
 
 				// else it's the first value of j that sees it. so we compute the
 				// coset reevaluation.
-				reevaledRoot := sv.FFT(coeffs[name], fft.DIT, false, ratio, share, localPool)
+				reevaledRoot := sv.FFT(coeffs[name], fft.DIT, false, ratio, share, nil)
 				computedReeval.Store(name, reevaledRoot)
 			})
 
 			ppool.ExecutePoolChunky(len(handles), func(k int) {
-				localPool := mempool.WrapsWithMemCache(largePool)
-				defer localPool.TearDown()
-
 				pol := handles[k]
 				// short-path, the column is a purely Shifted(Natural) or a Natural
 				// (this excludes repeats and/or interleaved columns)
@@ -424,7 +417,7 @@ func (ctx *quotientCtx) Run(run *wizard.ProverRuntime) {
 					utils.Panic("handle %v not found in the coeffs\n", name)
 				}
 
-				res := sv.FFT(coeffs[name], fft.DIT, false, ratio, share, localPool)
+				res := sv.FFT(coeffs[name], fft.DIT, false, ratio, share, nil)
 				computedReeval.Store(name, res)
 
 			})
@@ -481,16 +474,5 @@ func (ctx *quotientCtx) Run(run *wizard.ProverRuntime) {
 			stopTimer()
 
 		}
-
-		// Forcefuly clean the memory for the computed reevals
-		computedReeval.Range(func(k, v interface{}) bool {
-
-			if pooled, ok := v.(*sv.Pooled); ok {
-				pooled.Free(largePool)
-			}
-
-			computedReeval.Delete(k)
-			return true
-		})
 	}
 }
