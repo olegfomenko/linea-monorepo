@@ -143,7 +143,7 @@ func difFFTIterable(a []field.Element, twiddles [][]field.Element, maxSplits int
 
 				parallel.Execute(m, func(start, end int) {
 					innerDIFWithTwiddles(b, twiddles[stage], start, end, m)
-				}, nbTasks)
+				}, nbTasks/(1<<(stage)))
 			}
 		})
 
@@ -268,7 +268,7 @@ func ditFFTIterable(a []field.Element, twiddles [][]field.Element, maxSplits int
 
 				parallel.Execute(m, func(start, end int) {
 					innerDITWithTwiddles(b, twiddles[i], start, end, m)
-				}, nbTasks)
+				}, nbTasks/(1<<(i)))
 			}
 		})
 
