@@ -8,7 +8,6 @@ import (
 	"github.com/consensys/linea-monorepo/prover/maths/common/vector"
 	"github.com/consensys/linea-monorepo/prover/maths/field"
 	"github.com/consensys/linea-monorepo/prover/utils"
-	"github.com/consensys/linea-monorepo/prover/utils/parallel"
 	ppool "github.com/consensys/linea-monorepo/prover/utils/parallel/pool"
 )
 
@@ -132,13 +131,11 @@ func TransversalHash(
 
 	// Now, we need to reconciliate the results of the buffer with
 	// the result for each thread
-	parallel.Execute(pols[0].Len(), func(start, stop int) {
-		for col := start; col < stop; col++ {
-			// Accumulate the const
-			vector.Add(mainResults[col*64:(col+1)*64], mainResults[col*64:(col+1)*64], constResults)
-			// And run the reverse FFT
-			domain.FFTInverse(mainResults[col*64:(col+1)*64], fft.DIT, fft.OnCoset(), fft.WithNbTasks(1))
-		}
+	ppool.ExecutePoolChunky(pols[0].Len(), func(col int) {
+		// Accumulate the const
+		vector.Add(mainResults[col*64:(col+1)*64], mainResults[col*64:(col+1)*64], constResults)
+		// And run the reverse FFT
+		domain.FFTInverse(mainResults[col*64:(col+1)*64], fft.DIT, fft.OnCoset(), fft.WithNbTasks(1))
 	})
 
 	return mainResults
