@@ -5,8 +5,7 @@ import (
 	"sync"
 )
 
-var queue chan func() = make(chan func())
-var available chan struct{} = make(chan struct{}, runtime.GOMAXPROCS(0))
+var queue chan func() = make(chan func(), runtime.GOMAXPROCS(0))
 var once sync.Once
 
 func ExecutePool(task func()) {
@@ -40,19 +39,11 @@ func ExecutePoolChunky(nbIterations int, work func(k int)) {
 
 func run() {
 	for i := 0; i < runtime.GOMAXPROCS(0); i++ {
-		available <- struct{}{}
-	}
-
-	go scheduler()
-}
-
-func scheduler() {
-	for {
-		<-available
-		task := <-queue
 		go func() {
-			task()
-			available <- struct{}{}
+			for {
+				task := <-queue
+				task()
+			}
 		}()
 	}
 }
