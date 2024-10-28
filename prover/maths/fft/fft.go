@@ -6,6 +6,7 @@ import (
 	"math/bits"
 
 	"github.com/consensys/linea-monorepo/prover/maths/field"
+	"github.com/consensys/linea-monorepo/prover/utils"
 )
 
 // Decimation is used in the FFT call to select decimation in time or in frequency
@@ -51,9 +52,9 @@ func (domain *Domain) FFT(a []field.Element, decimation Decimation, opts ...Opti
 
 	switch decimation {
 	case DIF:
-		difFFT(a, domain.Twiddles, 0, maxSplits, nil, opt.nbTasks)
+		difFFTIterable(a, domain.Twiddles, maxSplits, opt.nbTasks)
 	case DIT:
-		ditFFT(a, domain.Twiddles, 0, maxSplits, nil, opt.nbTasks)
+		ditFFTIterable(a, domain.Twiddles, maxSplits, opt.nbTasks)
 	default:
 		panic("not implemented")
 	}
@@ -106,6 +107,49 @@ func (domain *Domain) FFTInverse(a []field.Element, decimation Decimation, opts 
 	// decimation == DIF
 	scale(domain.CosetTableInvReversed)
 
+}
+
+func difFFTIterable(a []field.Element, twiddles [][]field.Element, maxSplits int, nbTasks int) {
+	n := len(a)
+
+	stage := 0
+
+	var m int
+	iterations := utils.Log2Floor(n)
+	for i := 0; i < iterations; i++ {
+		if n == 1 {
+			return
+		} else if n == 256 {
+			parallel.ExecuteChunky(1<<stage, func(start, end int) {
+				for j := start; j < end; j++ {
+					kerDIFNP_256(a[j*n:(j+1)*n], twiddles, stage)
+				}
+			})
+
+			return
+		}
+
+		m = n >> 1
+
+		parallelButterfly := (m > butterflyThreshold) && (stage < maxSplits)
+		parallel.ExecuteChunky(1<<stage, func(start, end int) {
+			for j := start; j < end; j++ {
+				b := a[j*n : (j+1)*n]
+
+				if !parallelButterfly {
+					innerDIFWithTwiddles(b, twiddles[stage], 0, m, m)
+					continue
+				}
+
+				parallel.Execute(m, func(start, end int) {
+					innerDIFWithTwiddles(b, twiddles[stage], start, end, m)
+				}, nbTasks)
+			}
+		})
+
+		stage++
+		n = m
+	}
 }
 
 func difFFT(a []field.Element, twiddles [][]field.Element, stage int, maxSplits int, chDone chan struct{}, nbTasks int) {
@@ -186,6 +230,49 @@ func ditFFT(a []field.Element, twiddles [][]field.Element, stage int, maxSplits 
 		}, nbTasks/(1<<(stage)))
 	} else {
 		innerDITWithTwiddles(a, twiddles[stage], 0, m, m)
+	}
+}
+
+func ditFFTIterable(a []field.Element, twiddles [][]field.Element, maxSplits int, nbTasks int) {
+	if len(a) == 1 {
+		return
+	}
+
+	n := 2
+	iterations := utils.Log2Floor(len(a))
+	if len(a) > 256 {
+		n = 256
+		iterations -= 8
+
+		parallel.ExecuteChunky(1<<(iterations), func(start, end int) {
+			for j := start; j < end; j++ {
+				kerDITNP_256(a[j*n:(j+1)*n], twiddles, iterations)
+			}
+		})
+
+		n <<= 1
+	}
+
+	for i := iterations - 1; i >= 0; i-- {
+		m := n >> 1
+
+		parallelButterfly := (n > butterflyThreshold) && (i < maxSplits)
+		parallel.ExecuteChunky(1<<i, func(start, end int) {
+			for j := start; j < end; j++ {
+				b := a[j*n : (j+1)*n]
+
+				if !parallelButterfly {
+					innerDITWithTwiddles(b, twiddles[i], 0, m, m)
+					continue
+				}
+
+				parallel.Execute(m, func(start, end int) {
+					innerDITWithTwiddles(b, twiddles[i], start, end, m)
+				}, nbTasks)
+			}
+		})
+
+		n <<= 1
 	}
 }
 
