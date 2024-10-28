@@ -120,7 +120,7 @@ func difFFTIterable(a []field.Element, twiddles [][]field.Element, maxSplits int
 		if n == 1 {
 			return
 		} else if n == 256 {
-			parallel.ExecuteChunky(1<<stage, func(start, end int) {
+			parallel.Execute(1<<stage, func(start, end int) {
 				for j := start; j < end; j++ {
 					kerDIFNP_256(a[j*n:(j+1)*n], twiddles, stage)
 				}
@@ -132,7 +132,7 @@ func difFFTIterable(a []field.Element, twiddles [][]field.Element, maxSplits int
 		m = n >> 1
 
 		parallelButterfly := (m > butterflyThreshold) && (stage < maxSplits)
-		parallel.ExecuteChunky(1<<stage, func(start, end int) {
+		parallel.Execute(1<<stage, func(start, end int) {
 			for j := start; j < end; j++ {
 				b := a[j*n : (j+1)*n]
 
@@ -143,7 +143,7 @@ func difFFTIterable(a []field.Element, twiddles [][]field.Element, maxSplits int
 
 				parallel.Execute(m, func(start, end int) {
 					innerDIFWithTwiddles(b, twiddles[stage], start, end, m)
-				}, nbTasks/(1<<(stage)))
+				})
 			}
 		})
 
@@ -244,7 +244,7 @@ func ditFFTIterable(a []field.Element, twiddles [][]field.Element, maxSplits int
 		n = 256
 		iterations -= 8
 
-		parallel.ExecuteChunky(1<<(iterations), func(start, end int) {
+		parallel.Execute(1<<(iterations), func(start, end int) {
 			for j := start; j < end; j++ {
 				kerDITNP_256(a[j*n:(j+1)*n], twiddles, iterations)
 			}
@@ -257,7 +257,7 @@ func ditFFTIterable(a []field.Element, twiddles [][]field.Element, maxSplits int
 		m := n >> 1
 
 		parallelButterfly := (n > butterflyThreshold) && (i < maxSplits)
-		parallel.ExecuteChunky(1<<i, func(start, end int) {
+		parallel.Execute(1<<i, func(start, end int) {
 			for j := start; j < end; j++ {
 				b := a[j*n : (j+1)*n]
 
@@ -268,7 +268,7 @@ func ditFFTIterable(a []field.Element, twiddles [][]field.Element, maxSplits int
 
 				parallel.Execute(m, func(start, end int) {
 					innerDITWithTwiddles(b, twiddles[i], start, end, m)
-				}, nbTasks/(1<<(i)))
+				})
 			}
 		})
 
