@@ -240,11 +240,11 @@ func ditFFTIterable(a []field.Element, twiddles [][]field.Element, maxSplits int
 
 	n := 2
 	iterations := utils.Log2Floor(len(a))
-	if len(a) > 256 {
+	if len(a) >= 256 {
 		n = 256
 		iterations -= 8
 
-		parallel.Execute(1<<(iterations), func(start, end int) {
+		parallel.ExecuteChunky(1<<(iterations), func(start, end int) {
 			for j := start; j < end; j++ {
 				kerDITNP_256(a[j*n:(j+1)*n], twiddles, iterations)
 			}
@@ -256,22 +256,38 @@ func ditFFTIterable(a []field.Element, twiddles [][]field.Element, maxSplits int
 	for i := iterations - 1; i >= 0; i-- {
 		m := n >> 1
 
-		parallelButterfly := (n > butterflyThreshold) && (i < maxSplits)
-		parallel.Execute(1<<i, func(start, end int) {
-			for j := start; j < end; j++ {
-				b := a[j*n : (j+1)*n]
-
-				if !parallelButterfly {
-					innerDITWithTwiddles(b, twiddles[i], 0, m, m)
-					continue
-				}
-
-				parallel.Execute(m, func(start, end int) {
-					innerDITWithTwiddles(b, twiddles[i], start, end, m)
-				})
+		if len(a) < 256 {
+			for j := 0; j < 1<<i; j++ {
+				innerDITWithTwiddlesAndOffset(a, twiddles[i], 0, m, m, j*n)
 			}
-		})
+		} else {
+			// Number of subchunks in chunk.
+			// TODO: determine how to adjust this values using maxSplits and nbTasks.
+			subchunksInChunk := 2
 
+			// The number of chunks for the current FFT level == len(a)/n
+			chunksNum := i + 1 // == len(a)/n
+			subChunksNum := chunksNum * subchunksInChunk
+
+			parallel.Execute(subChunksNum, func(start, end int) {
+				// Here j is an index of a subchunk.
+				for j := start; j < end; j++ {
+					// Identify the main chunk for this subchunk.
+					chunk := j / subchunksInChunk
+					// Calculate the position of this subchunk within its chunk.
+					subchunk := j % subchunksInChunk
+					// Determine the starting offset for the chunk in array 'a'.
+					offset := chunk * n
+					// The size of subchunk is a half of each chunk divided by subchunk count.
+					subchunkSize := n / (2 * subchunksInChunk)
+
+					innerDITWithTwiddlesAndOffset(a, twiddles[i], subchunk*subchunkSize,
+						(subchunk+1)*subchunkSize, m, offset)
+				}
+			})
+		}
+
+		// Double the chunk size for the next FFT level.
 		n <<= 1
 	}
 }
@@ -295,6 +311,17 @@ func innerDITWithTwiddles(a []field.Element, twiddles []field.Element, start, en
 	for i := start; i < end; i++ {
 		a[i+m].Mul(&a[i+m], &twiddles[i])
 		field.Butterfly(&a[i], &a[i+m])
+	}
+}
+
+func innerDITWithTwiddlesAndOffset(a []field.Element, twiddles []field.Element, start, end, m, offset int) {
+	if start == 0 {
+		field.Butterfly(&a[offset], &a[offset+m])
+		start++
+	}
+	for i := start; i < end; i++ {
+		a[offset+i+m].Mul(&a[offset+i+m], &twiddles[i])
+		field.Butterfly(&a[offset+i], &a[offset+i+m])
 	}
 }
 
