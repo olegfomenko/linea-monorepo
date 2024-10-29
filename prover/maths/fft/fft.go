@@ -3,6 +3,7 @@ package fft
 import (
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/linea-monorepo/prover/utils/parallel"
+	ppool "github.com/consensys/linea-monorepo/prover/utils/parallel/pool"
 	"math/bits"
 
 	"github.com/consensys/linea-monorepo/prover/maths/field"
@@ -52,8 +53,10 @@ func (domain *Domain) FFT(a []field.Element, decimation Decimation, opts ...Opti
 
 	switch decimation {
 	case DIF:
+		//difFFT(a, domain.Twiddles, 0, maxSplits, nil, opt.nbTasks)
 		difFFTIterable(a, domain.Twiddles, maxSplits, opt.nbTasks)
 	case DIT:
+		//ditFFT(a, domain.Twiddles, 0, maxSplits, nil, opt.nbTasks)
 		ditFFTIterable(a, domain.Twiddles, maxSplits, opt.nbTasks)
 	default:
 		panic("not implemented")
@@ -111,16 +114,16 @@ func (domain *Domain) FFTInverse(a []field.Element, decimation Decimation, opts 
 
 func difFFTIterable(a []field.Element, twiddles [][]field.Element, maxSplits int, nbTasks int) {
 	n := len(a)
-
 	stage := 0
 
 	var m int
 	iterations := utils.Log2Floor(n)
+
 	for i := 0; i < iterations; i++ {
 		if n == 1 {
 			return
 		} else if n == 256 {
-			parallel.Execute(1<<stage, func(start, end int) {
+			ppool.ExecutePool(1<<stage, func(start, end int) {
 				for j := start; j < end; j++ {
 					kerDIFNP_256(a[j*n:(j+1)*n], twiddles, stage)
 				}
@@ -131,16 +134,9 @@ func difFFTIterable(a []field.Element, twiddles [][]field.Element, maxSplits int
 
 		m = n >> 1
 
-		parallelButterfly := (m > butterflyThreshold) && (stage < maxSplits)
-		parallel.Execute(1<<stage, func(start, end int) {
+		ppool.ExecutePool(1<<stage, func(start, end int) {
 			for j := start; j < end; j++ {
 				b := a[j*n : (j+1)*n]
-
-				if !parallelButterfly {
-					innerDIFWithTwiddles(b, twiddles[stage], 0, m, m)
-					continue
-				}
-
 				parallel.Execute(m, func(start, end int) {
 					innerDIFWithTwiddles(b, twiddles[stage], start, end, m)
 				})
@@ -244,7 +240,7 @@ func ditFFTIterable(a []field.Element, twiddles [][]field.Element, maxSplits int
 		n = 256
 		iterations -= 8
 
-		parallel.Execute(1<<(iterations), func(start, end int) {
+		ppool.ExecutePool(1<<(iterations), func(start, end int) {
 			for j := start; j < end; j++ {
 				kerDITNP_256(a[j*n:(j+1)*n], twiddles, iterations)
 			}
@@ -256,15 +252,9 @@ func ditFFTIterable(a []field.Element, twiddles [][]field.Element, maxSplits int
 	for i := iterations - 1; i >= 0; i-- {
 		m := n >> 1
 
-		parallelButterfly := (n > butterflyThreshold) && (i < maxSplits)
-		parallel.Execute(1<<i, func(start, end int) {
+		ppool.ExecutePool(1<<i, func(start, end int) {
 			for j := start; j < end; j++ {
 				b := a[j*n : (j+1)*n]
-
-				if !parallelButterfly {
-					innerDITWithTwiddles(b, twiddles[i], 0, m, m)
-					continue
-				}
 
 				parallel.Execute(m, func(start, end int) {
 					innerDITWithTwiddles(b, twiddles[i], start, end, m)
