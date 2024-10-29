@@ -5,15 +5,17 @@ import (
 	"sync"
 )
 
+var nbTasks = 2 * runtime.GOMAXPROCS(0)
 var queue chan func() = make(chan func())
-var available chan struct{} = make(chan struct{}, runtime.GOMAXPROCS(0))
+var available chan struct{} = make(chan struct{}, nbTasks)
 var once sync.Once
 
 func ExecutePool(nbIterations int, work func(start, stop int)) {
 	once.Do(run)
 
-	nbIterationsPerCpus := nbIterations / runtime.GOMAXPROCS(0)
-	if nbIterationsPerCpus == 0 {
+	nbIterationsPerCpus := nbIterations / nbTasks
+
+	if nbIterationsPerCpus < 1 {
 		nbIterationsPerCpus = 1
 	}
 
@@ -22,13 +24,17 @@ func ExecutePool(nbIterations int, work func(start, stop int)) {
 
 	for start < nbIterations {
 		wg.Add(1)
-		stop := min(nbIterations, start+nbIterationsPerCpus)
+		_start := start
+		_stop := min(nbIterations, _start+nbIterationsPerCpus)
+
 		queue <- func() {
-			work(start, stop)
+			work(_start, _stop)
 			wg.Done()
 		}
+
 		start += nbIterationsPerCpus
 	}
+
 	wg.Wait()
 }
 
@@ -50,7 +56,7 @@ func ExecutePoolChunky(nbIterations int, work func(k int)) {
 }
 
 func run() {
-	for i := 0; i < runtime.GOMAXPROCS(0); i++ {
+	for i := 0; i < nbTasks; i++ {
 		available <- struct{}{}
 	}
 

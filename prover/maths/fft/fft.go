@@ -81,8 +81,10 @@ func (domain *Domain) FFTInverse(a []field.Element, decimation Decimation, opts 
 
 	switch decimation {
 	case DIF:
+		//difFFT(a, domain.TwiddlesInv, 0, maxSplits, nil, opt.nbTasks)
 		difFFTIterable(a, domain.TwiddlesInv, maxSplits, opt.nbTasks)
 	case DIT:
+		//ditFFT(a, domain.TwiddlesInv, 0, maxSplits, nil, opt.nbTasks)
 		ditFFTIterable(a, domain.TwiddlesInv, maxSplits, opt.nbTasks)
 	default:
 		panic("not implemented")
