@@ -31,7 +31,7 @@ const (
 type Key struct {
 	// lock guards the access to the SIS key and prevents the user from hashing
 	// concurrently with the same SIS key.
-	lock *sync.Mutex
+	lock sync.Mutex
 	// gnarkInternal stores the SIS key itself and some precomputed domain
 	// twiddles.
 	gnarkInternal *sis.RSis
@@ -62,7 +62,7 @@ func GenerateKey(params Params, maxNumFieldToHash int) Key {
 	}
 
 	res := Key{
-		lock:          &sync.Mutex{},
+		lock:          sync.Mutex{},
 		gnarkInternal: rsis,
 		Params:        params,
 	}
@@ -359,7 +359,7 @@ func (s *Key) CopyWithFreshBuffer() *Key {
 
 	clonedRsis := s.gnarkInternal.CopyWithFreshBuffer()
 	return &Key{
-		lock:          &sync.Mutex{},
+		lock:          sync.Mutex{},
 		gnarkInternal: &clonedRsis,
 		Params:        s.Params,
 	}

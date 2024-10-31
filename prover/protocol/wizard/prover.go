@@ -119,7 +119,7 @@ type ProverRuntime struct {
 	FS *fiatshamir.State
 
 	// lock is global lock so that the assignment maps are thread safes
-	lock *sync.Mutex
+	lock sync.Mutex
 }
 
 // Prove is the top-level function that runs the Prover on the user's side. It
@@ -211,7 +211,7 @@ func (c *CompiledIOP) createProver() ProverRuntime {
 		State:         collection.NewMapping[string, interface{}](),
 		FS:            fs,
 		currRound:     0,
-		lock:          &sync.Mutex{},
+		lock:          sync.Mutex{},
 	}
 
 	// Pass the precomputed polynomials

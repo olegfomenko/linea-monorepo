@@ -245,7 +245,7 @@ func (ctx compilationCtx) GetPlonkProverAction() PlonkInWizardProverAction {
 	if ctx.HasCommitment() {
 		return initialBBSProverAction{
 			compilationCtx:  ctx,
-			proverStateLock: &sync.Mutex{},
+			proverStateLock: sync.Mutex{},
 		}
 	}
 

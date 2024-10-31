@@ -34,7 +34,7 @@ type (
 	// BBS22 randomness can be derived.
 	initialBBSProverAction struct {
 		compilationCtx
-		proverStateLock *sync.Mutex
+		proverStateLock sync.Mutex
 	}
 	// lrCommitProverAction is a wrapper-type for [compilationCtx] implementing the
 	// interface [wizard.ProverAction]. It is responsible, when using the BBS22
@@ -42,7 +42,7 @@ type (
 	// randomness has been derived.
 	lroCommitProverAction struct {
 		compilationCtx
-		proverStateLock *sync.Mutex
+		proverStateLock sync.Mutex
 	}
 )
 
