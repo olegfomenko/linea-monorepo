@@ -119,7 +119,7 @@ type ProverRuntime struct {
 	FS *fiatshamir.State
 
 	// lock is global lock so that the assignment maps are thread safes
-	lock *sync.RWMutex
+	lock sync.RWMutex
 }
 
 // Prove is the top-level function that runs the Prover on the user's side. It
@@ -211,7 +211,7 @@ func (c *CompiledIOP) createProver() ProverRuntime {
 		State:         collection.NewMapping[string, interface{}](),
 		FS:            fs,
 		currRound:     0,
-		lock:          &sync.RWMutex{},
+		lock:          sync.RWMutex{},
 	}
 
 	// Pass the precomputed polynomials
@@ -243,7 +243,7 @@ func (c *CompiledIOP) createProver() ProverRuntime {
 //     not explictly an assigned column.
 //   - `name` relates to a column that does exists but whose assignment is
 //     not readily available when the function is called.
-func (run ProverRuntime) GetColumn(name ifaces.ColID) ifaces.ColAssignment {
+func (run *ProverRuntime) GetColumn(name ifaces.ColID) ifaces.ColAssignment {
 
 	// global prover's lock before accessing the witnesses
 	run.lock.RLock()
@@ -261,7 +261,7 @@ func (run ProverRuntime) GetColumn(name ifaces.ColID) ifaces.ColAssignment {
 
 // CopyColumnInto implements `column.GetWitness`. Copies the witness into a slice
 // Deprecated: this is deadcode
-func (run ProverRuntime) CopyColumnInto(name ifaces.ColID, buff *ifaces.ColAssignment) {
+func (run *ProverRuntime) CopyColumnInto(name ifaces.ColID, buff *ifaces.ColAssignment) {
 
 	// global prover's lock before accessing the witnesses
 	run.lock.Lock()
@@ -289,7 +289,7 @@ func (run ProverRuntime) CopyColumnInto(name ifaces.ColID, buff *ifaces.ColAssig
 // The same cautiousness as for [ProverRuntime.AssignColumn] applies to this
 // function. Namely, this function will only work if the requested column is
 // explicitly an assigned column (meaning not a derive column).
-func (run ProverRuntime) GetColumnAt(name ifaces.ColID, pos int) field.Element {
+func (run *ProverRuntime) GetColumnAt(name ifaces.ColID, pos int) field.Element {
 
 	// global prover's lock before accessing the witnesses
 	run.lock.RLock()
