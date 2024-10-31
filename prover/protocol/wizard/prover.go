@@ -119,7 +119,7 @@ type ProverRuntime struct {
 	FS *fiatshamir.State
 
 	// lock is global lock so that the assignment maps are thread safes
-	lock sync.RWMutex
+	lock sync.Mutex
 }
 
 // Prove is the top-level function that runs the Prover on the user's side. It
@@ -211,7 +211,7 @@ func (c *CompiledIOP) createProver() ProverRuntime {
 		State:         collection.NewMapping[string, interface{}](),
 		FS:            fs,
 		currRound:     0,
-		lock:          sync.RWMutex{},
+		lock:          sync.Mutex{},
 	}
 
 	// Pass the precomputed polynomials
@@ -246,8 +246,8 @@ func (c *CompiledIOP) createProver() ProverRuntime {
 func (run *ProverRuntime) GetColumn(name ifaces.ColID) ifaces.ColAssignment {
 
 	// global prover's lock before accessing the witnesses
-	run.lock.RLock()
-	defer run.lock.RUnlock()
+	run.lock.Lock()
+	defer run.lock.Unlock()
 
 	/*
 		Make sure the column is registered. If the name is the one specified
@@ -292,8 +292,8 @@ func (run *ProverRuntime) CopyColumnInto(name ifaces.ColID, buff *ifaces.ColAssi
 func (run *ProverRuntime) GetColumnAt(name ifaces.ColID, pos int) field.Element {
 
 	// global prover's lock before accessing the witnesses
-	run.lock.RLock()
-	defer run.lock.RUnlock()
+	run.lock.Lock()
+	defer run.lock.Unlock()
 
 	/*
 		Make sure the column is registered. If the name is the one specified
@@ -556,8 +556,8 @@ func (run *ProverRuntime) runProverSteps() {
 // Deprecated: use [ProverRuntime.GetColumn] instead
 func (run *ProverRuntime) GetMessage(name ifaces.ColID) ifaces.ColAssignment {
 	// Global prover locks for accessing the maps
-	run.lock.RLock()
-	defer run.lock.RUnlock()
+	run.lock.Lock()
+	defer run.lock.Unlock()
 
 	// Sanity-check, this panics if the column does not exists
 	return run.Columns.MustGet(name)
@@ -635,8 +635,8 @@ func (run *ProverRuntime) AssignUnivariate(name ifaces.QueryID, x field.Element,
 // the same thing.
 func (run *ProverRuntime) GetUnivariateEval(name ifaces.QueryID) query.UnivariateEval {
 	// Global prover locks for accessing the maps
-	run.lock.RLock()
-	defer run.lock.RUnlock()
+	run.lock.Lock()
+	defer run.lock.Unlock()
 	return run.Spec.QueriesParams.Data(name).(query.UnivariateEval)
 }
 
@@ -646,8 +646,8 @@ func (run *ProverRuntime) GetUnivariateEval(name ifaces.QueryID) query.Univariat
 // step of the prover runtime.
 func (run *ProverRuntime) GetUnivariateParams(name ifaces.QueryID) query.UnivariateEvalParams {
 	// Global prover's lock for accessing params
-	run.lock.RLock()
-	defer run.lock.RUnlock()
+	run.lock.Lock()
+	defer run.lock.Unlock()
 	return run.QueriesParams.MustGet(name).(query.UnivariateEvalParams)
 }
 
@@ -675,8 +675,8 @@ func (run *ProverRuntime) AssignLocalPoint(name ifaces.QueryID, y field.Element)
 // the same thing.
 func (run *ProverRuntime) GetLocalPointEval(name ifaces.QueryID) query.LocalOpening {
 	// Global prover locks for accessing the maps
-	run.lock.RLock()
-	defer run.lock.RUnlock()
+	run.lock.Lock()
+	defer run.lock.Unlock()
 	return run.Spec.QueriesParams.Data(name).(query.LocalOpening)
 }
 
@@ -685,8 +685,8 @@ func (run *ProverRuntime) GetLocalPointEval(name ifaces.QueryID) query.LocalOpen
 func (run *ProverRuntime) GetLocalPointEvalParams(name ifaces.QueryID) query.LocalOpeningParams {
 
 	// Global prover's lock for accessing params
-	run.lock.RLock()
-	defer run.lock.RUnlock()
+	run.lock.Lock()
+	defer run.lock.Unlock()
 
 	return run.QueriesParams.MustGet(name).(query.LocalOpeningParams)
 }
