@@ -3,8 +3,6 @@
 package ringsis_64_16
 
 import (
-	"runtime"
-
 	"github.com/consensys/linea-monorepo/prover/maths/common/smartvectors"
 	"github.com/consensys/linea-monorepo/prover/maths/common/vector"
 	"github.com/consensys/linea-monorepo/prover/maths/fft"
@@ -140,7 +138,7 @@ func TransversalHash(
 			// Accumulate the const
 			vector.Add(mainResults[col*64:(col+1)*64], mainResults[col*64:(col+1)*64], constResults)
 			// And run the reverse FFT
-			domain.FFTInverse(mainResults[col*64:(col+1)*64], fft.DIT, fft.OnCoset(), fft.WithNbTasks(1))
+			domain.FFTInverse(mainResults[col*64:(col+1)*64], fft.DIT, fft.OnCoset())
 		}
 	})
 
