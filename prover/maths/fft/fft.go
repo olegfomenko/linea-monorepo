@@ -4,6 +4,7 @@ import (
 	"math/bits"
 
 	"github.com/consensys/linea-monorepo/prover/maths/field"
+	"github.com/consensys/gnark-crypto/ecc/bls12-377/fr"
 )
 
 // Decimation is used in the FFT call to select decimation in time or in frequency
@@ -29,7 +30,7 @@ func (domain *Domain) FFT(a []field.Element, decimation Decimation, coset ...boo
 	if _coset {
 		scale := func(cosetTable []field.Element) {
 			for i := 0; i < len(a); i++ {
-				a[i].Mul(&a[i], &cosetTable[i])
+				fr.Mul(&a[i], &a[i], &cosetTable[i])
 			}
 		}
 		if decimation == DIT {
@@ -74,15 +75,15 @@ func (domain *Domain) FFTInverse(a []field.Element, decimation Decimation, coset
 	// scale by CardinalityInv
 	if !_coset {
 		for i := 0; i < len(a); i++ {
-			a[i].Mul(&a[i], &domain.CardinalityInv)
+			fr.Mul(&a[i], &a[i], &domain.CardinalityInv)
 		}
 		return
 	}
 
 	scale := func(cosetTable []field.Element) {
 		for i := 0; i < len(a); i++ {
-			a[i].Mul(&a[i], &cosetTable[i]).
-				Mul(&a[i], &domain.CardinalityInv)
+			fr.Mul(&a[i], &a[i], &cosetTable[i])
+			fr.Mul(&a[i], &a[i], &domain.CardinalityInv)
 		}
 	}
 	if decimation == DIT {
@@ -110,7 +111,7 @@ func difFFT(a []field.Element, twiddles [][]field.Element, stage int) {
 	field.Butterfly(&a[0], &a[m])
 	for i := 1; i < m; i++ {
 		field.Butterfly(&a[i], &a[i+m])
-		a[i+m].Mul(&a[i+m], &twiddles[stage][i])
+		fr.Mul(&a[i+m], &a[i+m], &twiddles[stage][i])
 	}
 
 	if m == 1 {
@@ -140,7 +141,7 @@ func ditFFT(a []field.Element, twiddles [][]field.Element, stage int) {
 
 	field.Butterfly(&a[0], &a[m])
 	for k := 1; k < m; k++ {
-		a[k+m].Mul(&a[k+m], &twiddles[stage][k])
+		fr.Mul(&a[k+m], &a[k+m], &twiddles[stage][k])
 		field.Butterfly(&a[k], &a[k+m])
 	}
 }
@@ -167,17 +168,17 @@ func kerDIT8(a []field.Element, twiddles [][]field.Element, stage int) {
 	field.Butterfly(&a[4], &a[5])
 	field.Butterfly(&a[6], &a[7])
 	field.Butterfly(&a[0], &a[2])
-	a[3].Mul(&a[3], &twiddles[stage+1][1])
+	fr.Mul(&a[3], &a[3], &twiddles[stage+1][1])
 	field.Butterfly(&a[1], &a[3])
 	field.Butterfly(&a[4], &a[6])
-	a[7].Mul(&a[7], &twiddles[stage+1][1])
+	fr.Mul(&a[7], &a[7], &twiddles[stage+1][1])
 	field.Butterfly(&a[5], &a[7])
 	field.Butterfly(&a[0], &a[4])
-	a[5].Mul(&a[5], &twiddles[stage+0][1])
+	fr.Mul(&a[5], &a[5], &twiddles[stage+0][1])
 	field.Butterfly(&a[1], &a[5])
-	a[6].Mul(&a[6], &twiddles[stage+0][2])
+	fr.Mul(&a[6], &a[6], &twiddles[stage+0][2])
 	field.Butterfly(&a[2], &a[6])
-	a[7].Mul(&a[7], &twiddles[stage+0][3])
+	fr.Mul(&a[7], &a[7], &twiddles[stage+0][3])
 	field.Butterfly(&a[3], &a[7])
 }
 
@@ -188,15 +189,15 @@ func kerDIF8(a []field.Element, twiddles [][]field.Element, stage int) {
 	field.Butterfly(&a[1], &a[5])
 	field.Butterfly(&a[2], &a[6])
 	field.Butterfly(&a[3], &a[7])
-	a[5].Mul(&a[5], &twiddles[stage+0][1])
-	a[6].Mul(&a[6], &twiddles[stage+0][2])
-	a[7].Mul(&a[7], &twiddles[stage+0][3])
+	fr.Mul(&a[5], &a[5], &twiddles[stage+0][1])
+	fr.Mul(&a[6], &a[6], &twiddles[stage+0][2])
+	fr.Mul(&a[7], &a[7], &twiddles[stage+0][3])
 	field.Butterfly(&a[0], &a[2])
 	field.Butterfly(&a[1], &a[3])
 	field.Butterfly(&a[4], &a[6])
 	field.Butterfly(&a[5], &a[7])
-	a[3].Mul(&a[3], &twiddles[stage+1][1])
-	a[7].Mul(&a[7], &twiddles[stage+1][1])
+	fr.Mul(&a[3], &a[3], &twiddles[stage+1][1])
+	fr.Mul(&a[7], &a[7], &twiddles[stage+1][1])
 	field.Butterfly(&a[0], &a[1])
 	field.Butterfly(&a[2], &a[3])
 	field.Butterfly(&a[4], &a[5])

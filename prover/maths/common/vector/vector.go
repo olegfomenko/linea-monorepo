@@ -41,7 +41,7 @@ func ScalarProd(a, b []field.Element) field.Element {
 
 	var res, tmp field.Element
 	for i := range a {
-		tmp.Mul(&a[i], &b[i])
+		fr.Mul(&tmp, &a[i], &b[i])
 		res.Add(&res, &tmp)
 	}
 	return res
@@ -69,7 +69,7 @@ func MulElementWise(res, a, b []field.Element) {
 	}
 
 	for i := range a {
-		res[i].Mul(&a[i], &b[i])
+		fr.Mul(&res[i], &a[i], &b[i])
 	}
 }
 
@@ -212,7 +212,7 @@ func PowerVec(x field.Element, n int) []field.Element {
 	res[0].SetOne()
 
 	for i := 1; i < n; i++ {
-		res[i].Mul(&res[i-1], &x)
+		fr.Mul(&res[i], &res[i-1], &x)
 	}
 
 	return res
