@@ -2,15 +2,13 @@ package symbolic
 
 import (
 	"fmt"
-	"sync"
-
 	"github.com/consensys/gnark/frontend"
+	ppool "github.com/consensys/linea-monorepo/prover/utils/parallel/pool"
 
 	"github.com/consensys/linea-monorepo/prover/maths/common/mempool"
 	sv "github.com/consensys/linea-monorepo/prover/maths/common/smartvectors"
 	"github.com/consensys/linea-monorepo/prover/maths/field"
 	"github.com/consensys/linea-monorepo/prover/utils"
-	"github.com/consensys/linea-monorepo/prover/utils/parallel"
 )
 
 const (
@@ -92,8 +90,7 @@ func (b *ExpressionBoard) Evaluate(inputs []sv.SmartVector, p ...mempool.MemPool
 	numChunks := totalSize / MaxChunkSize
 	res := make([]field.Element, totalSize)
 
-	parallel.ExecuteFromChan(numChunks, func(wg *sync.WaitGroup, id *parallel.AtomicCounter) {
-
+	ppool.ExecutePoolChunky(numChunks, func(chunkID int) {
 		var pool []mempool.MemPool
 		if len(p) > 0 {
 			if _, ok := p[0].(*mempool.DebuggeableCall); !ok {
@@ -103,35 +100,26 @@ func (b *ExpressionBoard) Evaluate(inputs []sv.SmartVector, p ...mempool.MemPool
 
 		chunkInputs := make([]sv.SmartVector, len(inputs))
 
-		for {
-			chunkID, ok := id.Next()
-			if !ok {
-				break
+		var (
+			chunkStart = chunkID * MaxChunkSize
+			chunkStop  = (chunkID + 1) * MaxChunkSize
+		)
+
+		for i, inp := range inputs {
+			chunkInputs[i] = inp.SubVector(chunkStart, chunkStop)
+			// Sanity-check : the output of SubVector must have the correct length
+			if chunkInputs[i].Len() != chunkStop-chunkStart {
+				utils.Panic("Subvector failed, subvector should have size %v but size is %v", chunkStop-chunkStart, chunkInputs[i].Len())
 			}
-
-			var (
-				chunkStart = chunkID * MaxChunkSize
-				chunkStop  = (chunkID + 1) * MaxChunkSize
-			)
-
-			for i, inp := range inputs {
-				chunkInputs[i] = inp.SubVector(chunkStart, chunkStop)
-				// Sanity-check : the output of SubVector must have the correct length
-				if chunkInputs[i].Len() != chunkStop-chunkStart {
-					utils.Panic("Subvector failed, subvector should have size %v but size is %v", chunkStop-chunkStart, chunkInputs[i].Len())
-				}
-			}
-
-			// We don't parallelize evaluations where the inputs are all scalars
-			// Therefore the cast is safe.
-			chunkRes := b.evaluateSingleThread(chunkInputs, pool...)
-
-			// No race condition here as each call write to different places
-			// of vec.
-			chunkRes.WriteInSlice(res[chunkStart:chunkStop])
-
-			wg.Done()
 		}
+
+		// We don't parallelize evaluations where the inputs are all scalars
+		// Therefore the cast is safe.
+		chunkRes := b.evaluateSingleThread(chunkInputs, pool...)
+
+		// No race condition here as each call write to different places
+		// of vec.
+		chunkRes.WriteInSlice(res[chunkStart:chunkStop])
 
 		if len(p) > 0 {
 			if sa, ok := pool[0].(*mempool.SliceArena); ok {
