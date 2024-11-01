@@ -137,7 +137,7 @@ func TransversalHash(
 			// Accumulate the const
 			vector.Add(mainResults[col*64:(col+1)*64], mainResults[col*64:(col+1)*64], constResults)
 			// And run the reverse FFT
-			domain.FFTInverse(mainResults[col*64:(col+1)*64], fft.DIT, fft.OnCoset())
+			domain.FFTInverse(mainResults[col*64:(col+1)*64], fft.DIT, fft.OnCoset(), fft.WithNbTasks(1))
 		}
 	})
 

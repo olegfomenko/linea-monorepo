@@ -197,11 +197,11 @@ func (r *RSis) Sum(b []byte) []byte {
 			// fast path.
 			FFT64(k, r.twiddleCosets)
 		} else {
-			r.Domain.FFT(k, fft.DIF, fft.OnCoset(), fft.WithNbTasks(1))
+			r.Domain.FFT(k, fft.DIF, fft.OnCoset())
 		}
 		mulModAcc(res, r.Ag[i], k)
 	}
-	r.Domain.FFTInverse(res, fft.DIT, fft.OnCoset(), fft.WithNbTasks(1)) // -> reduces mod Xᵈ+1
+	r.Domain.FFTInverse(res, fft.DIT, fft.OnCoset()) // -> reduces mod Xᵈ+1
 
 	resBytes, err := field.MarshalFieldVecToBinary(res)
 	if err != nil {
