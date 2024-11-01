@@ -11,17 +11,18 @@ import (
 	"github.com/consensys/linea-monorepo/prover/maths/field"
 	"github.com/consensys/linea-monorepo/prover/utils"
 	"github.com/consensys/linea-monorepo/prover/utils/parallel"
+	ppool "github.com/consensys/linea-monorepo/prover/utils/parallel/pool"
 )
 
 func TransversalHash(
-// the Ag for ring-sis
+	// the Ag for ring-sis
 	ag [][]field.Element,
-// A non-transposed list of columns
-// All of the same length
+	// A non-transposed list of columns
+	// All of the same length
 	pols []smartvectors.SmartVector,
-// The precomputed twiddle cosets for the forward FFT
+	// The precomputed twiddle cosets for the forward FFT
 	twiddleCosets []field.Element,
-// The domain for the final inverse-FFT
+	// The domain for the final inverse-FFT
 	domain *fft.Domain,
 ) []field.Element {
 
@@ -51,91 +52,87 @@ func TransversalHash(
 		constResults = make([]field.Element, 32)
 	)
 
-	parallel.ExecuteChunky(numJobs, func(start, stop int) {
-
+	ppool.ExecutePoolChunky(numJobs, func(i int) {
 		// We process the columns per segment of `numColumnPerJob`
-		for i := start; i < stop; i++ {
+		var (
+			localResult = make([]field.Element, numColumnPerJob*32)
+			limbs       = make([]field.Element, 32)
+
+			// Each segment is processed by packet of `numFieldPerPoly=1` rows
+			startFromCol = i * numColumnPerJob
+			stopAtCol    = (i + 1) * numColumnPerJob
+		)
+
+		for row := 0; row < len(pols); row += 1 {
 
 			var (
-				localResult = make([]field.Element, numColumnPerJob*32)
-				limbs       = make([]field.Element, 32)
-
-				// Each segment is processed by packet of `numFieldPerPoly=1` rows
-				startFromCol = start * numColumnPerJob
-				stopAtCol    = stop * numColumnPerJob
+				chunksFull = make([][]field.Element, 1)
+				mask       = 0
 			)
 
-			for row := 0; row < len(pols); row += 1 {
-
-				var (
-					chunksFull = make([][]field.Element, 1)
-					mask       = 0
-				)
-
-				for j := 0; j < 1; j++ {
-					if row+j >= len(pols) {
-						continue
-					}
-
-					pReg, pIsReg := pols[row+j].(*smartvectors.Regular)
-					if pIsReg {
-						chunksFull[j] = (*pReg)[startFromCol:stopAtCol]
-						mask |= (1 << j)
-						continue
-					}
-
-					pPool, pIsPool := pols[row+j].(*smartvectors.Pooled)
-					if pIsPool {
-						chunksFull[j] = pPool.Regular[startFromCol:stopAtCol]
-						mask |= (1 << j)
-						continue
-					}
+			for j := 0; j < 1; j++ {
+				if row+j >= len(pols) {
+					continue
 				}
 
-				if mask > 0 {
-					for col := 0; col < (stopAtCol - startFromCol); col++ {
-						colChunk := [1]field.Element{}
-						for j := 0; j < 1; j++ {
-							if chunksFull[j] != nil {
-								colChunk[j] = chunksFull[j][col]
-							}
-						}
-
-						limbDecompose(limbs, colChunk[:])
-						partialFFT[mask](limbs, twiddleCosets)
-						mulModAcc(localResult[col*32:(col+1)*32], limbs, ag[row/1])
-					}
+				pReg, pIsReg := pols[row+j].(*smartvectors.Regular)
+				if pIsReg {
+					chunksFull[j] = (*pReg)[startFromCol:stopAtCol]
+					mask |= (1 << j)
+					continue
 				}
 
-				if i == 0 {
-
-					var (
-						cMask      = ((1 << 1) - 1) ^ mask
-						chunkConst = make([]field.Element, 1)
-					)
-
-					if cMask > 0 {
-						for j := 0; j < 1; j++ {
-							if row+j >= len(pols) {
-								continue
-							}
-
-							if (cMask>>j)&1 == 1 {
-								chunkConst[j] = pols[row+j].(*smartvectors.Constant).Get(0)
-							}
-						}
-
-						limbDecompose(limbs, chunkConst)
-						partialFFT[cMask](limbs, twiddleCosets)
-						mulModAcc(constResults, limbs, ag[row/1])
-					}
+				pPool, pIsPool := pols[row+j].(*smartvectors.Pooled)
+				if pIsPool {
+					chunksFull[j] = pPool.Regular[startFromCol:stopAtCol]
+					mask |= (1 << j)
+					continue
 				}
 			}
 
-			// copy the segment into the main result at the end
-			copy(mainResults[startFromCol*32:stopAtCol*32], localResult)
+			if mask > 0 {
+				for col := 0; col < (stopAtCol - startFromCol); col++ {
+					colChunk := [1]field.Element{}
+					for j := 0; j < 1; j++ {
+						if chunksFull[j] != nil {
+							colChunk[j] = chunksFull[j][col]
+						}
+					}
+
+					limbDecompose(limbs, colChunk[:])
+					partialFFT[mask](limbs, twiddleCosets)
+					mulModAcc(localResult[col*32:(col+1)*32], limbs, ag[row/1])
+				}
+			}
+
+			if i == 0 {
+
+				var (
+					cMask      = ((1 << 1) - 1) ^ mask
+					chunkConst = make([]field.Element, 1)
+				)
+
+				if cMask > 0 {
+					for j := 0; j < 1; j++ {
+						if row+j >= len(pols) {
+							continue
+						}
+
+						if (cMask>>j)&1 == 1 {
+							chunkConst[j] = pols[row+j].(*smartvectors.Constant).Get(0)
+						}
+					}
+
+					limbDecompose(limbs, chunkConst)
+					partialFFT[cMask](limbs, twiddleCosets)
+					mulModAcc(constResults, limbs, ag[row/1])
+				}
+			}
 		}
-	}, numWorker)
+
+		// copy the segment into the main result at the end
+		copy(mainResults[startFromCol*32:stopAtCol*32], localResult)
+	})
 
 	// Now, we need to reconciliate the results of the buffer with
 	// the result for each thread
