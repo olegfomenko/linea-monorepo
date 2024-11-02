@@ -26,7 +26,7 @@ func Interpolate(poly []field.Element, x fr.Element) field.Element {
 	}
 
 	// TODO can be different for other platforms
-	if utils.Log2Floor(len(poly)) > 15 {
+	if utils.Log2Floor(len(poly)) > 13 {
 		return InterpolateFFT(poly, x)
 	}
 
@@ -88,7 +88,7 @@ func InterpolateFFT(evaluations []field.Element, x fr.Element) field.Element {
 
 	domain := fft.NewDomain(n)
 
-	domain.FFTInverse(evaluations, fft.DIF)
+	domain.FFTInverse(evaluations, fft.DIF, fft.WithNbTasks(1))
 
 	fft.BitReverse(evaluations)
 
