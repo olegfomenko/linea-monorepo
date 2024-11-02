@@ -26,7 +26,7 @@ func Interpolate(poly []field.Element, x fr.Element) field.Element {
 	}
 
 	// TODO can be different for other platforms
-	if utils.Log2Floor(len(poly)) > 12 {
+	if utils.Log2Floor(len(poly)) > 15 {
 		return InterpolateFFT(poly, x)
 	}
 
@@ -88,12 +88,11 @@ func InterpolateFFT(evaluations []field.Element, x fr.Element) field.Element {
 
 	domain := fft.NewDomain(n)
 
-	p := vector.DeepCopy(evaluations)
-	domain.FFTInverse(p, fft.DIF)
+	domain.FFTInverse(evaluations, fft.DIF)
 
-	fft.BitReverse(p)
+	fft.BitReverse(evaluations)
 
-	return poly.EvalUnivariate(p, x)
+	return poly.EvalUnivariate(evaluations, x)
 }
 
 // Batch version of Interpolate
