@@ -20,10 +20,14 @@ at a chosen x.
 As an input the user can specify that the inputs are given
 on a coset.
 */
-func Interpolate(poly []field.Element, x fr.Element, oncoset ...bool) field.Element {
-
+func Interpolate(poly []field.Element, x fr.Element) field.Element {
 	if !utils.IsPowerOfTwo(len(poly)) {
 		utils.Panic("only support powers of two but poly has length %v", len(poly))
+	}
+
+	// TODO can be different for other platforms
+	if utils.Log2Floor(len(poly)) > 12 {
+		return InterpolateFFT(poly, x)
 	}
 
 	n := len(poly)
@@ -32,11 +36,6 @@ func Interpolate(poly []field.Element, x fr.Element, oncoset ...bool) field.Elem
 	denominator := make([]field.Element, n)
 
 	one := field.One()
-
-	if len(oncoset) > 0 && oncoset[0] {
-		x.Mul(&x, &domain.FrMultiplicativeGenInv)
-	}
-
 	/*
 		First, we compute the denominator,
 
@@ -80,7 +79,7 @@ func Interpolate(poly []field.Element, x fr.Element, oncoset ...bool) field.Elem
 
 }
 
-func NewInterpolate(evaluations []field.Element, x fr.Element, oncoset ...bool) field.Element {
+func InterpolateFFT(evaluations []field.Element, x fr.Element) field.Element {
 	if !utils.IsPowerOfTwo(len(evaluations)) {
 		utils.Panic("only support powers of two but poly has length %v", len(evaluations))
 	}
@@ -89,14 +88,8 @@ func NewInterpolate(evaluations []field.Element, x fr.Element, oncoset ...bool) 
 
 	domain := fft.NewDomain(n)
 
-	opts := make([]fft.Option, 0, 1)
-	if len(oncoset) > 0 && oncoset[0] {
-		opts = append(opts, fft.OnCoset())
-		domain = domain.WithCoset()
-	}
-
 	p := vector.DeepCopy(evaluations)
-	domain.FFTInverse(p, fft.DIF, opts...)
+	domain.FFTInverse(p, fft.DIF)
 
 	fft.BitReverse(p)
 
