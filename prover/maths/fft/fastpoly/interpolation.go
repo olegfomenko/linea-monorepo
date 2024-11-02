@@ -20,13 +20,13 @@ at a chosen x.
 As an input the user can specify that the inputs are given
 on a coset.
 */
-func Interpolate(poly []field.Element, x fr.Element) field.Element {
+func Interpolate(poly []field.Element, x fr.Element, parallel ...bool) field.Element {
 	if !utils.IsPowerOfTwo(len(poly)) {
 		utils.Panic("only support powers of two but poly has length %v", len(poly))
 	}
 
 	// TODO can be different for other platforms
-	if utils.Log2Floor(len(poly)) > 13 {
+	if len(parallel) > 0 && parallel[0] && utils.Log2Floor(len(poly)) > 13 {
 		return InterpolateFFT(poly, x)
 	}
 
@@ -88,7 +88,7 @@ func InterpolateFFT(evaluations []field.Element, x fr.Element) field.Element {
 
 	domain := fft.NewDomain(n)
 
-	domain.FFTInverse(evaluations, fft.DIF, fft.WithNbTasks(1))
+	domain.FFTInverse(evaluations, fft.DIF)
 
 	fft.BitReverse(evaluations)
 

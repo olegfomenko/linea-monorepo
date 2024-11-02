@@ -147,7 +147,7 @@ func (v *VerifierInputs) checkStatement() (err error) {
 	// Check the consistency of Ys and proof.Linear combination
 	var (
 		Yjoined     = utils.Join(v.Ys...)
-		alphaY      = smartvectors.Interpolate(v.OpeningProof.LinearCombination, v.X)
+		alphaY      = smartvectors.Interpolate(v.OpeningProof.LinearCombination, v.X, true)
 		alphaYProme = poly.EvalUnivariate(Yjoined, v.RandomCoin)
 	)
 

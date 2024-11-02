@@ -92,7 +92,7 @@ func RuffiniQuoRem(p SmartVector, q field.Element) (quo SmartVector, rem field.E
 }
 
 // Evaluate a polynomial in Lagrange basis
-func Interpolate(v SmartVector, x field.Element) field.Element {
+func Interpolate(v SmartVector, x field.Element, parallel ...bool) field.Element {
 	switch con := v.(type) {
 	case *Constant:
 		return con.val
@@ -101,7 +101,7 @@ func Interpolate(v SmartVector, x field.Element) field.Element {
 	// Maybe there is an optim for windowed here
 	res := make([]field.Element, v.Len())
 	v.WriteInSlice(res)
-	return fastpoly.Interpolate(res, x)
+	return fastpoly.Interpolate(res, x, parallel...)
 }
 
 // Batch-evaluate polynomials in Lagrange basis
