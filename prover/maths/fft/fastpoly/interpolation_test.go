@@ -1,6 +1,8 @@
 package fastpoly
 
 import (
+	"fmt"
+	"math/rand"
 	"testing"
 
 	"github.com/consensys/linea-monorepo/prover/maths/common/poly"
@@ -35,6 +37,118 @@ func TestInterpolation(t *testing.T) {
 	fft.BitReverse(onCoset)
 	yOnCoset := Interpolate(onCoset, x, true)
 	require.Equal(t, expectedY.String(), yOnCoset.String())
+
+}
+
+// BenchmarkInterpolation-12    	     250	   4648674 ns/op
+// BenchmarkInterpolation-12    	     253	   4764962 ns/op
+func BenchmarkInterpolation(b *testing.B) {
+	rand := rand.New(rand.NewSource(786868))
+
+	for i := 8; i < 22; i++ {
+		n := 1 << i
+
+		b.Run(fmt.Sprintf("Vanilla without coset %d", i), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				b.StopTimer()
+				randPoly := vector.Rand(n)
+				x := field.PseudoRand(rand)
+				expected := poly.EvalUnivariate(randPoly, x)
+				domain := fft.NewDomain(n).WithCoset()
+
+				onRoots := vector.DeepCopy(randPoly)
+				domain.FFT(onRoots, fft.DIF)
+
+				fft.BitReverse(onRoots)
+
+				b.StartTimer()
+				yOnRoots := Interpolate(onRoots, x)
+				b.StopTimer()
+
+				require.Equal(b, expected.String(), yOnRoots.String())
+
+				/*
+					Test with coset
+				*/
+				//onCoset := vector.DeepCopy(randPoly)
+				//domain.FFT(onCoset, fft.DIF, fft.OnCoset())
+				//fft.BitReverse(onCoset)
+				//b.StartTimer()
+				//yOnCoset := Interpolate(onCoset, x, true)
+				//b.StopTimer()
+				//require.Equal(b, expected.String(), yOnCoset.String())
+			}
+		})
+
+		b.Run(fmt.Sprintf("Vanilla on coset %d", i), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				b.StopTimer()
+				randPoly := vector.Rand(n)
+				x := field.PseudoRand(rand)
+				expected := poly.EvalUnivariate(randPoly, x)
+				domain := fft.NewDomain(n).WithCoset()
+
+				onCoset := vector.DeepCopy(randPoly)
+				domain.FFT(onCoset, fft.DIF, fft.OnCoset())
+				fft.BitReverse(onCoset)
+				b.StartTimer()
+				yOnCoset := Interpolate(onCoset, x, true)
+				b.StopTimer()
+				require.Equal(b, expected.String(), yOnCoset.String())
+			}
+		})
+
+		b.Run(fmt.Sprintf("New without coset %d", i), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				b.StopTimer()
+				randPoly := vector.Rand(n)
+				x := field.PseudoRand(rand)
+				expected := poly.EvalUnivariate(randPoly, x)
+				domain := fft.NewDomain(n).WithCoset()
+
+				onRoots := vector.DeepCopy(randPoly)
+				domain.FFT(onRoots, fft.DIF)
+
+				fft.BitReverse(onRoots)
+
+				b.StartTimer()
+				yOnRoots := NewInterpolate(onRoots, x)
+				b.StopTimer()
+
+				require.Equal(b, expected.String(), yOnRoots.String())
+
+				/*
+					Test with coset
+				*/
+				//onCoset := vector.DeepCopy(randPoly)
+				//domain.FFT(onCoset, fft.DIF, fft.OnCoset())
+				//fft.BitReverse(onCoset)
+				//b.StartTimer()
+				//yOnCoset := NewInterpolate(onCoset, x, true)
+				//b.StopTimer()
+				//require.Equal(b, expected.String(), yOnCoset.String())
+
+			}
+		})
+
+		b.Run(fmt.Sprintf("New on coset %d", i), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				b.StopTimer()
+				randPoly := vector.Rand(n)
+				x := field.PseudoRand(rand)
+				expected := poly.EvalUnivariate(randPoly, x)
+				domain := fft.NewDomain(n).WithCoset()
+
+				onCoset := vector.DeepCopy(randPoly)
+				domain.FFT(onCoset, fft.DIF, fft.OnCoset())
+				fft.BitReverse(onCoset)
+				b.StartTimer()
+				yOnCoset := NewInterpolate(onCoset, x, true)
+				b.StopTimer()
+				require.Equal(b, expected.String(), yOnCoset.String())
+			}
+		})
+	}
 
 }
 

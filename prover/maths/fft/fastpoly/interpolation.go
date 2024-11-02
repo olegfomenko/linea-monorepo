@@ -1,6 +1,7 @@
 package fastpoly
 
 import (
+	"github.com/consensys/linea-monorepo/prover/maths/common/poly"
 	"math/big"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-377/fr"
@@ -77,6 +78,29 @@ func Interpolate(poly []field.Element, x fr.Element, oncoset ...bool) field.Elem
 
 	return res
 
+}
+
+func NewInterpolate(evaluations []field.Element, x fr.Element, oncoset ...bool) field.Element {
+	if !utils.IsPowerOfTwo(len(evaluations)) {
+		utils.Panic("only support powers of two but poly has length %v", len(evaluations))
+	}
+
+	n := len(evaluations)
+
+	domain := fft.NewDomain(n)
+
+	opts := make([]fft.Option, 0, 1)
+	if len(oncoset) > 0 && oncoset[0] {
+		opts = append(opts, fft.OnCoset())
+		domain = domain.WithCoset()
+	}
+
+	p := vector.DeepCopy(evaluations)
+	domain.FFTInverse(p, fft.DIF, opts...)
+
+	fft.BitReverse(p)
+
+	return poly.EvalUnivariate(p, x)
 }
 
 // Batch version of Interpolate
