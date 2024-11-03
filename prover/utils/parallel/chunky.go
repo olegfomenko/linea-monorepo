@@ -28,7 +28,7 @@ func ExecuteChunky(nbIterations int, work func(start, stop int), numcpus ...int)
 	wg := sync.WaitGroup{}
 	wg.Add(nbIterations)
 
-	jobChan := make(chan int, nbIterations)
+	jobChan := make(chan int, numcpu)
 	go fillChan(jobChan, nbIterations)
 
 	// Each goroutine consumes the jobChan to

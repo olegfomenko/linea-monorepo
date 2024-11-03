@@ -18,7 +18,7 @@ func ExecuteFromChan(nbIterations int, work func(wg *sync.WaitGroup, ch <-chan i
 		numcpu = numcpus[0]
 	}
 
-	jobChan := make(chan int, nbIterations)
+	jobChan := make(chan int, numcpu)
 	go fillChan(jobChan, nbIterations)
 
 	// The wait group ensures that all the children goroutine have terminated

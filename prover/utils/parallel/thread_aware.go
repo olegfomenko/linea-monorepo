@@ -20,7 +20,7 @@ func ExecuteThreadAware(nbIterations int, init ThreadInit, worker Worker, numcpu
 	wg := sync.WaitGroup{}
 	wg.Add(nbIterations)
 
-	jobChan := make(chan int, nbIterations)
+	jobChan := make(chan int, numcpu)
 	go fillChan(jobChan, nbIterations)
 
 	// Each goroutine consumes the jobChan to
