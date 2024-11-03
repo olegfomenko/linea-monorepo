@@ -6,7 +6,7 @@ import (
 	"github.com/consensys/linea-monorepo/prover/maths/field"
 	"github.com/consensys/linea-monorepo/prover/protocol/wizard"
 	"github.com/consensys/linea-monorepo/prover/protocol/wizardutils"
-	ppool "github.com/consensys/linea-monorepo/prover/utils/parallel/pool"
+	"github.com/consensys/linea-monorepo/prover/utils/parallel"
 )
 
 // proverTaskAtRound implements the [wizard.ProverAction] interface and is
@@ -15,8 +15,10 @@ import (
 type proverTaskAtRound []*ZCtx
 
 func (p proverTaskAtRound) Run(run *wizard.ProverRuntime) {
-	ppool.ExecutePoolChunky(len(p), func(i int) {
-		p[i].run(run)
+	parallel.Execute(len(p), func(start, end int) {
+		for i := start; i < end; i++ {
+			p[i].run(run)
+		}
 	})
 }
 

@@ -7,7 +7,7 @@ import (
 	"github.com/consensys/linea-monorepo/prover/protocol/ifaces"
 	"github.com/consensys/linea-monorepo/prover/protocol/wizard"
 	sym "github.com/consensys/linea-monorepo/prover/symbolic"
-	ppool "github.com/consensys/linea-monorepo/prover/utils/parallel/pool"
+	"github.com/consensys/linea-monorepo/prover/utils/parallel"
 )
 
 // arithmetizationLink collects columns from the hub that are of interest for
@@ -44,8 +44,10 @@ func (ss *Module) assignArithmetizationLink(run *wizard.ProverRuntime) {
 	accountIntegrationAssignFinal(run, *ss, ss.arithmetizationLink.Acp)
 
 	runConcurrent := func(pas []wizard.ProverAction) {
-		ppool.ExecutePoolChunky(len(pas), func(i int) {
-			pas[i].Run(run)
+		parallel.Execute(len(pas), func(start, end int) {
+			for i := start; i < end; i++ {
+				pas[i].Run(run)
+			}
 		})
 	}
 

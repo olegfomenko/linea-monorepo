@@ -2,7 +2,7 @@ package statesummary
 
 import (
 	"github.com/consensys/linea-monorepo/prover/maths/field"
-	ppool "github.com/consensys/linea-monorepo/prover/utils/parallel/pool"
+	"github.com/consensys/linea-monorepo/prover/utils/parallel"
 	"github.com/consensys/linea-monorepo/prover/zkevm/prover/common"
 	"io"
 
@@ -300,8 +300,10 @@ func (ss *stateSummaryAssignmentBuilder) finalize(run *wizard.ProverRuntime) {
 	ss.accumulatorStatement.PadAndAssign(run)
 
 	runConcurrent := func(pas []wizard.ProverAction) {
-		ppool.ExecutePoolChunky(len(pas), func(i int) {
-			pas[i].Run(run)
+		parallel.Execute(len(pas), func(start, end int) {
+			for i := start; i < end; i++ {
+				pas[i].Run(run)
+			}
 		})
 	}
 
