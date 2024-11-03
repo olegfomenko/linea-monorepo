@@ -92,7 +92,7 @@ func (b *ExpressionBoard) Evaluate(inputs []sv.SmartVector, p ...mempool.MemPool
 	numChunks := totalSize / MaxChunkSize
 	res := make([]field.Element, totalSize)
 
-	parallel.ExecuteFromChan(numChunks, func(wg *sync.WaitGroup, id *parallel.AtomicCounter) {
+	parallel.ExecuteFromChan(numChunks, func(wg *sync.WaitGroup, jobChan <-chan int) {
 
 		var pool []mempool.MemPool
 		if len(p) > 0 {
@@ -103,12 +103,7 @@ func (b *ExpressionBoard) Evaluate(inputs []sv.SmartVector, p ...mempool.MemPool
 
 		chunkInputs := make([]sv.SmartVector, len(inputs))
 
-		for {
-			chunkID, ok := id.Next()
-			if !ok {
-				break
-			}
-
+		for chunkID := range jobChan {
 			var (
 				chunkStart = chunkID * MaxChunkSize
 				chunkStop  = (chunkID + 1) * MaxChunkSize

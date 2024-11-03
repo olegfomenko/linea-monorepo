@@ -11,14 +11,15 @@ import (
 //
 // This is as [ExecuteChunky] but gives more freedom to the caller to initialize
 // its threads.
-func ExecuteFromChan(nbIterations int, work func(wg *sync.WaitGroup, taskCounter *AtomicCounter), numcpus ...int) {
+func ExecuteFromChan(nbIterations int, work func(wg *sync.WaitGroup, ch <-chan int), numcpus ...int) {
 
 	numcpu := runtime.GOMAXPROCS(0)
 	if len(numcpus) > 0 && numcpus[0] > 0 {
 		numcpu = numcpus[0]
 	}
 
-	tasksCounter := NewAtomicCounter(nbIterations)
+	jobChan := make(chan int, nbIterations)
+	go fillChan(jobChan, nbIterations)
 
 	// The wait group ensures that all the children goroutine have terminated
 	// before we close the
@@ -28,9 +29,10 @@ func ExecuteFromChan(nbIterations int, work func(wg *sync.WaitGroup, taskCounter
 	// Each goroutine consumes the jobChan to
 	for p := 0; p < numcpu; p++ {
 		go func() {
-			work(wg, tasksCounter)
+			work(wg, jobChan)
 		}()
 	}
 
 	wg.Wait()
+	close(jobChan)
 }

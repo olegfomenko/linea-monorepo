@@ -358,17 +358,12 @@ func (ctx *quotientCtx) Run(run *wizard.ProverRuntime) {
 
 			stopTimer := profiling.LogTimer("ReEvaluate %v pols of size %v on coset %v/%v", len(handles), ctx.DomainSize, share, ratio)
 
-			parallel.ExecuteFromChan(len(roots), func(wg *sync.WaitGroup, index *parallel.AtomicCounter) {
+			parallel.ExecuteFromChan(len(roots), func(wg *sync.WaitGroup, jobChan <-chan int) {
 
 				localPool := mempool.WrapsWithMemCache(largePool)
 				defer localPool.TearDown()
 
-				for {
-					k, ok := index.Next()
-					if !ok {
-						break
-					}
-
+				for k := range jobChan {
 					root := roots[k]
 					name := root.GetColID()
 
@@ -389,17 +384,12 @@ func (ctx *quotientCtx) Run(run *wizard.ProverRuntime) {
 				}
 			})
 
-			parallel.ExecuteFromChan(len(handles), func(wg *sync.WaitGroup, index *parallel.AtomicCounter) {
+			parallel.ExecuteFromChan(len(handles), func(wg *sync.WaitGroup, jobChan <-chan int) {
 
 				localPool := mempool.WrapsWithMemCache(largePool)
 				defer localPool.TearDown()
 
-				for {
-					k, ok := index.Next()
-					if !ok {
-						break
-					}
-
+				for k := range jobChan {
 					pol := handles[k]
 					// short-path, the column is a purely Shifted(Natural) or a Natural
 					// (this excludes repeats and/or interleaved columns)
@@ -434,7 +424,7 @@ func (ctx *quotientCtx) Run(run *wizard.ProverRuntime) {
 					}
 
 					name := pol.GetColID()
-					_, ok = computedReeval.Load(name)
+					_, ok := computedReeval.Load(name)
 					if ok {
 						wg.Done()
 						continue
