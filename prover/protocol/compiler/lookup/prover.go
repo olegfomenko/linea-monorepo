@@ -289,33 +289,31 @@ func (a mAssignmentTask) run(run *wizard.ProverRuntime) {
 type zAssignmentTask zCtx
 
 func (z zAssignmentTask) run(run *wizard.ProverRuntime) {
-	parallel.Execute(len(z.ZDenominatorBoarded), func(start, stop int) {
-		for frag := start; frag < stop; frag++ {
+	for frag := 0; frag < len(z.ZDenominatorBoarded); frag++ {
 
-			var (
-				numeratorMetadata = z.ZNumeratorBoarded[frag].ListVariableMetadata()
-				denominator       = wizardutils.EvalExprColumn(run, z.ZDenominatorBoarded[frag]).IntoRegVecSaveAlloc()
-				numerator         []field.Element
-				packedZ           = field.BatchInvert(denominator)
-			)
+		var (
+			numeratorMetadata = z.ZNumeratorBoarded[frag].ListVariableMetadata()
+			denominator       = wizardutils.EvalExprColumn(run, z.ZDenominatorBoarded[frag]).IntoRegVecSaveAlloc()
+			numerator         []field.Element
+			packedZ           = field.BatchInvert(denominator)
+		)
 
-			if len(numeratorMetadata) == 0 {
-				numerator = vector.Repeat(field.One(), z.Size)
-			}
-
-			if len(numeratorMetadata) > 0 {
-				numerator = wizardutils.EvalExprColumn(run, z.ZNumeratorBoarded[frag]).IntoRegVecSaveAlloc()
-			}
-
-			for k := range packedZ {
-				packedZ[k].Mul(&numerator[k], &packedZ[k])
-				if k > 0 {
-					packedZ[k].Add(&packedZ[k], &packedZ[k-1])
-				}
-			}
-
-			run.AssignColumn(z.Zs[frag].GetColID(), sv.NewRegular(packedZ))
-			run.AssignLocalPoint(z.ZOpenings[frag].ID, packedZ[len(packedZ)-1])
+		if len(numeratorMetadata) == 0 {
+			numerator = vector.Repeat(field.One(), z.Size)
 		}
-	})
+
+		if len(numeratorMetadata) > 0 {
+			numerator = wizardutils.EvalExprColumn(run, z.ZNumeratorBoarded[frag]).IntoRegVecSaveAlloc()
+		}
+
+		for k := range packedZ {
+			packedZ[k].Mul(&numerator[k], &packedZ[k])
+			if k > 0 {
+				packedZ[k].Add(&packedZ[k], &packedZ[k-1])
+			}
+		}
+
+		run.AssignColumn(z.Zs[frag].GetColID(), sv.NewRegular(packedZ))
+		run.AssignLocalPoint(z.ZOpenings[frag].ID, packedZ[len(packedZ)-1])
+	}
 }
