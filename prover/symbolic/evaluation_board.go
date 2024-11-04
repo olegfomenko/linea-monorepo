@@ -8,6 +8,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var localNAPool utils.DumbPool[*nodeAssignment] = utils.NewDumbPool[*nodeAssignment]()
+
 type boardAssignment [][]nodeAssignment
 
 type nodeAssignment struct {
@@ -72,6 +74,8 @@ func (b *ExpressionBoard) prepareNodeAssignments(inputs []sv.SmartVector) boardA
 			}
 
 			nodeAssignments[lvl][pil] = node
+
+			localNAPool.Put(&inputs)
 		}
 	}
 
@@ -86,15 +90,15 @@ func (b boardAssignment) eval(na *nodeAssignment, pool mempool.MemPool) {
 
 	var (
 		val = b.inputOf(na)
-		smv = make([]sv.SmartVector, len(val))
+		smv = make([]sv.SmartVector, 0, len(val))
 	)
 
-	for i, v := range val {
+	for _, v := range val {
 		if v.Value == nil {
 			panic("found a nil")
 		}
 
-		smv[i] = v.Value
+		smv = append(smv, v.Value)
 	}
 
 	na.Value = na.Node.Operator.Evaluate(smv, pool)
@@ -102,6 +106,8 @@ func (b boardAssignment) eval(na *nodeAssignment, pool mempool.MemPool) {
 	for i := range val {
 		b.incParentKnownCountOf(val[i], pool, false)
 	}
+
+	localNAPool.Put(&val)
 }
 
 func (na *nodeAssignment) tryGuessEval(val []*nodeAssignment) bool {
@@ -184,15 +190,15 @@ func (b boardAssignment) inputOf(na *nodeAssignment) []*nodeAssignment {
 		panic("na has a nil node")
 	}
 
-	nodeInputs := make([]*nodeAssignment, len(na.Node.Children))
+	nodeInputs := (*localNAPool.Get())[0:0]
 
-	for i, childID := range na.Node.Children {
+	for _, childID := range na.Node.Children {
 		var (
 			lvl = childID.level()
 			pil = childID.posInLevel()
 		)
 
-		nodeInputs[i] = &b[lvl][pil]
+		nodeInputs = append(nodeInputs, &b[lvl][pil])
 	}
 	return nodeInputs
 }
@@ -218,6 +224,7 @@ func (b boardAssignment) incParentKnownCountOf(na *nodeAssignment, pool mempool.
 			for i := range children {
 				b.incParentKnownCountOf(children[i], pool, recursive)
 			}
+			localNAPool.Put(&children)
 		}
 
 		return na.tryFree(pool)
