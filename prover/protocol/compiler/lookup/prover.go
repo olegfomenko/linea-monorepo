@@ -225,62 +225,62 @@ func (a mAssignmentTask) run(run *wizard.ProverRuntime) {
 
 	// This loops counts all the occurences of the rows of T within S and store
 	// them into S.
-	for i := range sCollapsed {
-
-		var (
-			hasFilter = a.SFilter[i] != nil
-			filter    []field.Element
-		)
-
-		if hasFilter {
-			filter = a.SFilter[i].GetColAssignment(run).IntoRegVecSaveAlloc()
-		}
-
-		for k := 0; k < sCollapsed[i].Len(); k++ {
-
-			if hasFilter && filter[k].IsZero() {
-				continue
-			}
-
-			if hasFilter && !filter[k].IsOne() {
-				utils.Panic(
-					"the filter column `%v` has a non-binary value at position `%v`: (%v)",
-					a.SFilter[i].GetColID(),
-					k,
-					filter[k].String(),
-				)
-			}
+	parallel.Execute(len(sCollapsed), func(start int, end int) {
+		for i := start; i < end; i++ {
 
 			var (
-				// v stores the entry of S that we are examining and looking for
-				// in the look up table.
-				v = sCollapsed[i].Get(k)
-
-				// posInM stores the position of `v` in the look-up table
-				posInM, ok = mapM[v]
+				hasFilter = a.SFilter[i] != nil
+				filter    []field.Element
 			)
 
-			if !ok {
-				tableRow := make([]field.Element, len(a.S[i]))
-				for j := range tableRow {
-					tableRow[j] = a.S[i][j].GetColAssignmentAt(run, k)
-				}
-				utils.Panic(
-					"entry %v of the table %v is not included in the table. tableRow=%v",
-					k, nameTable([][]ifaces.Column{a.S[i]}), vector.Prettify(tableRow),
-				)
+			if hasFilter {
+				filter = a.SFilter[i].GetColAssignment(run).IntoRegVecSaveAlloc()
 			}
 
-			mFrag, posInFragM := posInM[0], posInM[1]
-			m[mFrag][posInFragM].Add(&m[mFrag][posInFragM], &one)
-		}
+			for k := 0; k < sCollapsed[i].Len(); k++ {
 
-	}
+				if hasFilter && filter[k].IsZero() {
+					continue
+				}
+
+				if hasFilter && !filter[k].IsOne() {
+					utils.Panic(
+						"the filter column `%v` has a non-binary value at position `%v`: (%v)",
+						a.SFilter[i].GetColID(),
+						k,
+						filter[k].String(),
+					)
+				}
+
+				var (
+					// v stores the entry of S that we are examining and looking for
+					// in the look up table.
+					v = sCollapsed[i].Get(k)
+
+					// posInM stores the position of `v` in the look-up table
+					posInM, ok = mapM[v]
+				)
+
+				if !ok {
+					tableRow := make([]field.Element, len(a.S[i]))
+					for j := range tableRow {
+						tableRow[j] = a.S[i][j].GetColAssignmentAt(run, k)
+					}
+					utils.Panic(
+						"entry %v of the table %v is not included in the table. tableRow=%v",
+						k, nameTable([][]ifaces.Column{a.S[i]}), vector.Prettify(tableRow),
+					)
+				}
+
+				mFrag, posInFragM := posInM[0], posInM[1]
+				m[mFrag][posInFragM].Add(&m[mFrag][posInFragM], &one)
+			}
+		}
+	})
 
 	for frag := range m {
 		run.AssignColumn(a.M[frag].GetColID(), sv.NewRegular(m[frag]))
 	}
-
 }
 
 // zAssignmentTask represents a prover task of assignming the columns
@@ -289,31 +289,33 @@ func (a mAssignmentTask) run(run *wizard.ProverRuntime) {
 type zAssignmentTask zCtx
 
 func (z zAssignmentTask) run(run *wizard.ProverRuntime) {
-	for frag := 0; frag < len(z.ZDenominatorBoarded); frag++ {
+	parallel.Execute(len(z.ZDenominatorBoarded), func(start, stop int) {
+		for frag := 0; frag < len(z.ZDenominatorBoarded); frag++ {
 
-		var (
-			numeratorMetadata = z.ZNumeratorBoarded[frag].ListVariableMetadata()
-			denominator       = wizardutils.EvalExprColumn(run, z.ZDenominatorBoarded[frag]).IntoRegVecSaveAlloc()
-			numerator         []field.Element
-			packedZ           = field.BatchInvert(denominator)
-		)
+			var (
+				numeratorMetadata = z.ZNumeratorBoarded[frag].ListVariableMetadata()
+				denominator       = wizardutils.EvalExprColumn(run, z.ZDenominatorBoarded[frag]).IntoRegVecSaveAlloc()
+				numerator         []field.Element
+				packedZ           = field.BatchInvert(denominator)
+			)
 
-		if len(numeratorMetadata) == 0 {
-			numerator = vector.Repeat(field.One(), z.Size)
-		}
-
-		if len(numeratorMetadata) > 0 {
-			numerator = wizardutils.EvalExprColumn(run, z.ZNumeratorBoarded[frag]).IntoRegVecSaveAlloc()
-		}
-
-		for k := range packedZ {
-			packedZ[k].Mul(&numerator[k], &packedZ[k])
-			if k > 0 {
-				packedZ[k].Add(&packedZ[k], &packedZ[k-1])
+			if len(numeratorMetadata) == 0 {
+				numerator = vector.Repeat(field.One(), z.Size)
 			}
-		}
 
-		run.AssignColumn(z.Zs[frag].GetColID(), sv.NewRegular(packedZ))
-		run.AssignLocalPoint(z.ZOpenings[frag].ID, packedZ[len(packedZ)-1])
-	}
+			if len(numeratorMetadata) > 0 {
+				numerator = wizardutils.EvalExprColumn(run, z.ZNumeratorBoarded[frag]).IntoRegVecSaveAlloc()
+			}
+
+			for k := range packedZ {
+				packedZ[k].Mul(&numerator[k], &packedZ[k])
+				if k > 0 {
+					packedZ[k].Add(&packedZ[k], &packedZ[k-1])
+				}
+			}
+
+			run.AssignColumn(z.Zs[frag].GetColID(), sv.NewRegular(packedZ))
+			run.AssignLocalPoint(z.ZOpenings[frag].ID, packedZ[len(packedZ)-1])
+		}
+	})
 }
