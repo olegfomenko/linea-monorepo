@@ -35,9 +35,10 @@ func CreateFromSyncPool(size int) *FromSyncPool {
 
 // Prewarm the Pool by preallocating `nbPrewarm` in it.
 func (p *FromSyncPool) Prewarm(nbPrewarm int) MemPool {
+	prewarmed := make([]field.Element, p.size*nbPrewarm)
 	parallel.Execute(nbPrewarm, func(start, stop int) {
 		for i := start; i < stop; i++ {
-			vec := make([]field.Element, p.size)
+			vec := prewarmed[i*p.size : (i+1)*p.size]
 			p.P.Put(&vec)
 		}
 	})
