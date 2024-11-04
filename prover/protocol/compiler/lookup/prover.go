@@ -290,7 +290,7 @@ type zAssignmentTask zCtx
 
 func (z zAssignmentTask) run(run *wizard.ProverRuntime) {
 	parallel.Execute(len(z.ZDenominatorBoarded), func(start, stop int) {
-		for frag := 0; frag < len(z.ZDenominatorBoarded); frag++ {
+		for frag := start; frag < stop; frag++ {
 
 			var (
 				numeratorMetadata = z.ZNumeratorBoarded[frag].ListVariableMetadata()
