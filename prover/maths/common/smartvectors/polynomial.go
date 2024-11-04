@@ -99,9 +99,7 @@ func Interpolate(v SmartVector, x field.Element, oncoset ...bool) field.Element 
 	}
 
 	// Maybe there is an optim for windowed here
-	res := make([]field.Element, v.Len())
-	v.WriteInSlice(res)
-	return fastpoly.Interpolate(res, x, oncoset...)
+	return fastpoly.Interpolate(v.IntoRegVecSaveAlloc(), x, oncoset...)
 }
 
 // Batch-evaluate polynomials in Lagrange basis
