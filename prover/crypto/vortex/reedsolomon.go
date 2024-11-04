@@ -3,7 +3,6 @@ package vortex
 import (
 	"fmt"
 
-	"github.com/consensys/linea-monorepo/prover/maths/common/mempool"
 	"github.com/consensys/linea-monorepo/prover/maths/common/smartvectors"
 	"github.com/consensys/linea-monorepo/prover/maths/fft"
 	"github.com/consensys/linea-monorepo/prover/maths/field"
@@ -15,7 +14,7 @@ import (
 // the Lagrange basis Omega_{n * blow-up} where blow-up corresponds to the
 // inverse-rate of the code. The code is systematic as the original vector is
 // interleaved within the encoded vector.
-func (p *Params) rsEncode(v smartvectors.SmartVector, pool mempool.MemPool) smartvectors.SmartVector {
+func (p *Params) rsEncode(v smartvectors.SmartVector) smartvectors.SmartVector {
 
 	// Short path, v is a constant vector. It's encoding is also a constant vector
 	// with the same value.
@@ -25,21 +24,16 @@ func (p *Params) rsEncode(v smartvectors.SmartVector, pool mempool.MemPool) smar
 
 	// Interpret the smart-vectors as a polynomial in Lagrange form
 	// and returns a vector of coefficients.
-	asCoeffs := smartvectors.FFTInverse(v, fft.DIT, true, 0, 0, pool)
-	if pool != nil {
-		defer func() {
-			if pooled, ok := asCoeffs.(*smartvectors.Pooled); ok {
-				pooled.Free(pool)
-			}
-		}()
-	}
+	asCoeffs := smartvectors.FFTInverse(v, fft.DIT, true, 0, 0, nil)
 
 	// Pad the coefficients
-	expandedCoeffs := make([]field.Element, p.NumEncodedCols())
-	asCoeffs.WriteInSlice(expandedCoeffs[:asCoeffs.Len()])
+	expandedCoeffs := asCoeffs.(*smartvectors.Pooled).Regular
+	for expandedCoeffs.Len() < p.NumEncodedCols() {
+		expandedCoeffs = append(expandedCoeffs, field.Element{})
+	}
 
 	// This is not memory that will be recycled easily
-	return smartvectors.FFT(smartvectors.NewRegular(expandedCoeffs), fft.DIT, true, 0, 0, nil)
+	return smartvectors.FFT(&expandedCoeffs, fft.DIT, true, 0, 0, nil)
 }
 
 // IsCodeword returns nil iff the argument `v` is a correct codeword and an
