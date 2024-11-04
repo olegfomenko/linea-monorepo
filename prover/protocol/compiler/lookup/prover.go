@@ -225,62 +225,62 @@ func (a mAssignmentTask) run(run *wizard.ProverRuntime) {
 
 	// This loops counts all the occurences of the rows of T within S and store
 	// them into S.
-	parallel.Execute(len(sCollapsed), func(start int, end int) {
-		for i := start; i < end; i++ {
+	for i := range sCollapsed {
+
+		var (
+			hasFilter = a.SFilter[i] != nil
+			filter    []field.Element
+		)
+
+		if hasFilter {
+			filter = a.SFilter[i].GetColAssignment(run).IntoRegVecSaveAlloc()
+		}
+
+		for k := 0; k < sCollapsed[i].Len(); k++ {
+
+			if hasFilter && filter[k].IsZero() {
+				continue
+			}
+
+			if hasFilter && !filter[k].IsOne() {
+				utils.Panic(
+					"the filter column `%v` has a non-binary value at position `%v`: (%v)",
+					a.SFilter[i].GetColID(),
+					k,
+					filter[k].String(),
+				)
+			}
 
 			var (
-				hasFilter = a.SFilter[i] != nil
-				filter    []field.Element
+				// v stores the entry of S that we are examining and looking for
+				// in the look up table.
+				v = sCollapsed[i].Get(k)
+
+				// posInM stores the position of `v` in the look-up table
+				posInM, ok = mapM[v]
 			)
 
-			if hasFilter {
-				filter = a.SFilter[i].GetColAssignment(run).IntoRegVecSaveAlloc()
-			}
-
-			for k := 0; k < sCollapsed[i].Len(); k++ {
-
-				if hasFilter && filter[k].IsZero() {
-					continue
+			if !ok {
+				tableRow := make([]field.Element, len(a.S[i]))
+				for j := range tableRow {
+					tableRow[j] = a.S[i][j].GetColAssignmentAt(run, k)
 				}
-
-				if hasFilter && !filter[k].IsOne() {
-					utils.Panic(
-						"the filter column `%v` has a non-binary value at position `%v`: (%v)",
-						a.SFilter[i].GetColID(),
-						k,
-						filter[k].String(),
-					)
-				}
-
-				var (
-					// v stores the entry of S that we are examining and looking for
-					// in the look up table.
-					v = sCollapsed[i].Get(k)
-
-					// posInM stores the position of `v` in the look-up table
-					posInM, ok = mapM[v]
+				utils.Panic(
+					"entry %v of the table %v is not included in the table. tableRow=%v",
+					k, nameTable([][]ifaces.Column{a.S[i]}), vector.Prettify(tableRow),
 				)
-
-				if !ok {
-					tableRow := make([]field.Element, len(a.S[i]))
-					for j := range tableRow {
-						tableRow[j] = a.S[i][j].GetColAssignmentAt(run, k)
-					}
-					utils.Panic(
-						"entry %v of the table %v is not included in the table. tableRow=%v",
-						k, nameTable([][]ifaces.Column{a.S[i]}), vector.Prettify(tableRow),
-					)
-				}
-
-				mFrag, posInFragM := posInM[0], posInM[1]
-				m[mFrag][posInFragM].Add(&m[mFrag][posInFragM], &one)
 			}
+
+			mFrag, posInFragM := posInM[0], posInM[1]
+			m[mFrag][posInFragM].Add(&m[mFrag][posInFragM], &one)
 		}
-	})
+
+	}
 
 	for frag := range m {
 		run.AssignColumn(a.M[frag].GetColID(), sv.NewRegular(m[frag]))
 	}
+
 }
 
 // zAssignmentTask represents a prover task of assignming the columns
