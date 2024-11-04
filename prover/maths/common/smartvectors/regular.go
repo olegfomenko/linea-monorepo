@@ -107,13 +107,24 @@ func processRegularOnly(op operator, svecs []SmartVector, coeffs []int, p ...mem
 			// Importantly, we do not need to assume that regRes is originally
 			// zero.
 			if isFirst {
+				isFirst = false
+
+				if _, ok := op.(linCombOp); ok && coeffs[i] == 1 {
+					resvec = &Pooled{Regular: *reg}
+					continue
+				}
+
+				if _, ok := op.(productOp); ok && coeffs[i] == 1 {
+					resvec = &Pooled{Regular: *reg}
+					continue
+				}
+
 				if hasPool {
 					resvec = AllocFromPool(pool)
 				} else {
 					resvec = &Pooled{Regular: make([]field.Element, length)}
 				}
 
-				isFirst = false
 				op.vecIntoTerm(resvec.Regular, *reg, coeffs[i])
 				continue
 			}
