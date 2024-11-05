@@ -3,7 +3,8 @@ package utils
 import "sync"
 
 type DumbPool[T any] struct {
-	pool sync.Pool
+	pool  sync.Pool
+	maxSz int
 }
 
 func NewDumbPool[T any]() DumbPool[T] {
@@ -17,7 +18,15 @@ func NewDumbPool[T any]() DumbPool[T] {
 	}
 }
 
-func (d *DumbPool[T]) Get() *[]T {
+func (d *DumbPool[T]) Get(sz int) *[]T {
+	if sz < d.maxSz {
+		d.maxSz = sz
+		d.pool.New = func() interface{} {
+			arr := make([]T, 0, sz)
+			return &arr
+		}
+	}
+
 	return d.pool.Get().(*[]T)
 }
 

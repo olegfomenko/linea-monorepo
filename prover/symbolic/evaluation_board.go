@@ -190,7 +190,7 @@ func (b boardAssignment) inputOf(na *nodeAssignment) []*nodeAssignment {
 		panic("na has a nil node")
 	}
 
-	nodeInputs := (*localNAPool.Get())[0:0]
+	nodeInputs := (*localNAPool.Get(len(na.Node.Children)))[0:0]
 
 	for _, childID := range na.Node.Children {
 		var (
