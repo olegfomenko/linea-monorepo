@@ -5,7 +5,6 @@ import (
 
 	"github.com/consensys/linea-monorepo/prover/maths/field"
 	"github.com/consensys/linea-monorepo/prover/utils"
-	"github.com/consensys/linea-monorepo/prover/utils/parallel"
 )
 
 // FromSyncPool pools the allocation for slices of [field.Element] of size `Size`.
@@ -36,12 +35,13 @@ func CreateFromSyncPool(size int) *FromSyncPool {
 // Prewarm the Pool by preallocating `nbPrewarm` in it.
 func (p *FromSyncPool) Prewarm(nbPrewarm int) MemPool {
 	prewarmed := make([]field.Element, p.size*nbPrewarm)
-	parallel.Execute(nbPrewarm, func(start, stop int) {
-		for i := start; i < stop; i++ {
+
+	go func() {
+		for i := 0; i < nbPrewarm; i++ {
 			vec := prewarmed[i*p.size : (i+1)*p.size]
 			p.P.Put(&vec)
 		}
-	})
+	}()
 	return p
 }
 
