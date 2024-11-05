@@ -82,7 +82,15 @@ func (b *ExpressionBoard) Evaluate(inputs []sv.SmartVector, p ...mempool.MemPool
 	// multi-threaded option. The above condition cannot use the pool because we
 	// assume here that the pool has a vector size of exactly MaxChunkSize.
 	if totalSize == MaxChunkSize {
-		return b.evaluateSingleThread(inputs, p...).DeepCopy()
+		res := b.evaluateSingleThread(inputs, p...)
+
+		if pooled, ok := res.(*sv.Pooled); len(p) > 0 && ok {
+			res := pooled.DeepCopy()
+			pooled.Free(p[0])
+			return res
+		}
+
+		return res
 	}
 
 	if totalSize%MaxChunkSize != 0 {
@@ -130,6 +138,10 @@ func (b *ExpressionBoard) Evaluate(inputs []sv.SmartVector, p ...mempool.MemPool
 			// of vec.
 			chunkRes.WriteInSlice(res[chunkStart:chunkStop])
 
+			if pooled, ok := chunkRes.(*sv.Pooled); len(pool) > 0 && ok {
+				pooled.Free(pool[0])
+			}
+
 			wg.Done()
 		}
 
@@ -149,7 +161,7 @@ func (b *ExpressionBoard) evaluateSingleThread(inputs []sv.SmartVector, p ...mem
 
 	var (
 		length         = inputs[0].Len()
-		pool, hasPool  = mempool.ExtractCheckOptionalSoft(length, p...)
+		pool, _        = mempool.ExtractCheckOptionalSoft(length, p...)
 		nodeAssignment = b.prepareNodeAssignments(inputs)
 	)
 
@@ -172,17 +184,6 @@ func (b *ExpressionBoard) evaluateSingleThread(inputs []sv.SmartVector, p ...mem
 	if resBuf == nil {
 		panic("resbuf is nil")
 	}
-
-	// Deep-copy the last node and put resBuf back in the pool. It's cleanier
-	// that way.
-	if hasPool {
-		if reg, ok := resBuf.(*sv.Pooled); ok {
-			resGC := reg.DeepCopy()
-			reg.Free(pool)
-			resBuf = resGC
-		}
-	}
-
 	return resBuf
 }
 
