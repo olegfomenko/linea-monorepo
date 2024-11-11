@@ -34,19 +34,30 @@ type proverTaskAtRound struct {
 	ZAssignmentTasks []zAssignmentTask
 }
 
-// Run implements the [wizard.ProverAction interface].
+// Run implements the [wizard.ProverAction interface]. The tasks will spawn
+// a goroutine for each tasks and wait for all of them to finish. The approach
+// for parallelization can be justified if the number of go-routines stays low
+// (e.g. less than 1000s).
 func (p proverTaskAtRound) Run(run *wizard.ProverRuntime) {
+
+	wg := &sync.WaitGroup{}
+	wg.Add(p.numTasks())
+
 	var (
 		panicTrace []byte
 		panicMsg   any
 		panicOnce  = &sync.Once{}
-		wg         = &sync.WaitGroup{}
 	)
 
-	wg.Add(2)
+	for i := range p.MAssignmentTasks {
+		// the passing of the index `i` is there to ensure that the go-routine
+		// is running over a local copy of `i` which is not incremented every
+		// time the loop goes to the next iteration.
+		go func(i int) {
 
-	go func() {
-		parallel.Execute(len(p.MAssignmentTasks), func(start int, end int) {
+			// In case the subtask panics, we recover so that we can repanic in
+			// the main goroutine. Simplifying the process of tracing back the
+			// error and allowing to test the panics.
 			defer func() {
 				if r := recover(); r != nil {
 					panicOnce.Do(func() {
@@ -54,18 +65,23 @@ func (p proverTaskAtRound) Run(run *wizard.ProverRuntime) {
 						panicTrace = debug.Stack()
 					})
 				}
+
+				wg.Done()
 			}()
 
-			for i := start; i < end; i++ {
-				p.MAssignmentTasks[i].run(run)
-			}
-		})
+			p.MAssignmentTasks[i].run(run)
+		}(i)
+	}
 
-		wg.Done()
-	}()
+	for i := range p.ZAssignmentTasks {
+		// the passing of the index `i` is there to ensure that the go-routine
+		// is running over a local copy of `i` which is not incremented every
+		// time the loop goes to the next iteration.
+		go func(i int) {
 
-	go func() {
-		parallel.Execute(len(p.ZAssignmentTasks), func(start int, end int) {
+			// In case the subtask panics, we recover so that we can repanic in
+			// the main goroutine. Simplifying the process of tracing back the
+			// error and allowing to test the panics.
 			defer func() {
 				if r := recover(); r != nil {
 					panicOnce.Do(func() {
@@ -73,22 +89,19 @@ func (p proverTaskAtRound) Run(run *wizard.ProverRuntime) {
 						panicTrace = debug.Stack()
 					})
 				}
+
+				wg.Done()
 			}()
 
-			for i := start; i < end; i++ {
-				p.ZAssignmentTasks[i].run(run)
-			}
-		})
-
-		wg.Done()
-	}()
+			p.ZAssignmentTasks[i].run(run)
+		}(i)
+	}
 
 	wg.Wait()
 
 	if len(panicTrace) > 0 {
 		utils.Panic("Had a panic: %v\nStack: %v\n", panicMsg, string(panicTrace))
 	}
-
 }
 
 // pushMAssignment appends an [mAssignmentTask] to the list of tasks

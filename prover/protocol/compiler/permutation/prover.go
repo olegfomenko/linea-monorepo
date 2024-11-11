@@ -1,12 +1,13 @@
 package permutation
 
 import (
+	"sync"
+
 	"github.com/consensys/linea-monorepo/prover/maths/common/smartvectors"
 	"github.com/consensys/linea-monorepo/prover/maths/common/vector"
 	"github.com/consensys/linea-monorepo/prover/maths/field"
 	"github.com/consensys/linea-monorepo/prover/protocol/wizard"
 	"github.com/consensys/linea-monorepo/prover/protocol/wizardutils"
-	ppool "github.com/consensys/linea-monorepo/prover/utils/parallel/pool"
 )
 
 // proverTaskAtRound implements the [wizard.ProverAction] interface and is
@@ -14,10 +15,26 @@ import (
 // Z polynomial needs to be assigned in the current round
 type proverTaskAtRound []*ZCtx
 
+// Run implements the [wizard.ProverAction interface]. The tasks will spawn
+// a goroutine for each tasks and wait for all of them to finish. The approach
+// for parallelization can be justified if the number of go-routines stays low
+// (e.g. less than 1000s).
 func (p proverTaskAtRound) Run(run *wizard.ProverRuntime) {
-	ppool.ExecutePoolChunky(len(p), func(i int) {
-		p[i].run(run)
-	})
+
+	wg := &sync.WaitGroup{}
+	wg.Add(len(p))
+
+	for i := range p {
+		// the passing of the index `i` is there to ensure that the go-routine
+		// is running over a local copy of `i` which is not incremented every
+		// time the loop goes to the next iteration.
+		go func(i int) {
+			p[i].run(run)
+			wg.Done()
+		}(i)
+	}
+
+	wg.Wait()
 }
 
 // run assigns all the Zs in parallel and set the parameters for their
