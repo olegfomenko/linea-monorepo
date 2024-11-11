@@ -1,11 +1,10 @@
 package statesummary
 
 import (
-	"io"
-	"sync"
-
 	"github.com/consensys/linea-monorepo/prover/maths/field"
+	ppool "github.com/consensys/linea-monorepo/prover/utils/parallel/pool"
 	"github.com/consensys/linea-monorepo/prover/zkevm/prover/common"
+	"io"
 
 	"github.com/consensys/linea-monorepo/prover/backend/execution/statemanager"
 	"github.com/consensys/linea-monorepo/prover/crypto/mimc"
@@ -301,16 +300,9 @@ func (ss *stateSummaryAssignmentBuilder) finalize(run *wizard.ProverRuntime) {
 	ss.accumulatorStatement.PadAndAssign(run)
 
 	runConcurrent := func(pas []wizard.ProverAction) {
-		wg := &sync.WaitGroup{}
-		for _, pa := range pas {
-			wg.Add(1)
-			go func(pa wizard.ProverAction) {
-				pa.Run(run)
-				wg.Done()
-			}(pa)
-		}
-
-		wg.Wait()
+		ppool.ExecutePoolChunky(len(pas), func(i int) {
+			pas[i].Run(run)
+		})
 	}
 
 	runConcurrent([]wizard.ProverAction{
