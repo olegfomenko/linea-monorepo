@@ -1,13 +1,14 @@
 package statesummary
 
 import (
+	"sync"
+
 	"github.com/consensys/linea-monorepo/prover/maths/common/smartvectors"
 	"github.com/consensys/linea-monorepo/prover/maths/field"
 	"github.com/consensys/linea-monorepo/prover/protocol/dedicated"
 	"github.com/consensys/linea-monorepo/prover/protocol/ifaces"
 	"github.com/consensys/linea-monorepo/prover/protocol/wizard"
 	sym "github.com/consensys/linea-monorepo/prover/symbolic"
-	ppool "github.com/consensys/linea-monorepo/prover/utils/parallel/pool"
 )
 
 // arithmetizationLink collects columns from the hub that are of interest for
@@ -43,10 +44,19 @@ func (ss *Module) assignArithmetizationLink(run *wizard.ProverRuntime) {
 	accountIntegrationAssignInitial(run, *ss, ss.arithmetizationLink.Acp)
 	accountIntegrationAssignFinal(run, *ss, ss.arithmetizationLink.Acp)
 
+	// @alex: this should be commonized utility or should be simplified to not
+	// use a closure because the closure is used only once.
 	runConcurrent := func(pas []wizard.ProverAction) {
-		ppool.ExecutePoolChunky(len(pas), func(i int) {
-			pas[i].Run(run)
-		})
+		wg := &sync.WaitGroup{}
+		for _, pa := range pas {
+			wg.Add(1)
+			go func(pa wizard.ProverAction) {
+				pa.Run(run)
+				wg.Done()
+			}(pa)
+		}
+
+		wg.Wait()
 	}
 
 	runConcurrent([]wizard.ProverAction{

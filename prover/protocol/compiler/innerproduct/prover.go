@@ -1,11 +1,12 @@
 package innerproduct
 
 import (
+	"sync"
+
 	"github.com/consensys/linea-monorepo/prover/maths/common/smartvectors"
 	"github.com/consensys/linea-monorepo/prover/maths/field"
 	"github.com/consensys/linea-monorepo/prover/protocol/wizard"
 	"github.com/consensys/linea-monorepo/prover/protocol/wizardutils"
-	ppool "github.com/consensys/linea-monorepo/prover/utils/parallel/pool"
 )
 
 // proverTask implements the [wizard.ProverAction] interface and as such
@@ -15,9 +16,21 @@ type proverTask []*contextForSize
 
 // Run implements the [wizard.ProverAction] interface.
 func (p proverTask) Run(run *wizard.ProverRuntime) {
-	ppool.ExecutePoolChunky(len(p), func(i int) {
-		p[i].run(run)
-	})
+
+	wg := &sync.WaitGroup{}
+	wg.Add(len(p))
+
+	for i := range p {
+		// Passing the loop index ensures each go routine is storing the value
+		// of i in a different variable so that there is no race condition over
+		// i.
+		go func(i int) {
+			p[i].run(run)
+			wg.Done()
+		}(i)
+	}
+
+	wg.Wait()
 }
 
 // run partially implements the prover runtime associated with the current
