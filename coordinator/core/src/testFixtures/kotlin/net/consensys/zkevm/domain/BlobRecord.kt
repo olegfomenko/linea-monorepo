@@ -1,24 +1,31 @@
 package net.consensys.zkevm.domain
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import linea.domain.BlockIntervals
+import linea.kotlin.setFirstByteToZero
+import linea.kotlin.trimToSecondPrecision
 import net.consensys.linea.blob.ShnarfCalculatorVersion
-import net.consensys.setFirstByteToZero
-import net.consensys.trimToSecondPrecision
+import net.consensys.linea.metrics.MetricsFacade
+import net.consensys.linea.metrics.micrometer.MicrometerMetricsFacade
 import net.consensys.zkevm.coordinator.clients.BlobCompressionProof
 import net.consensys.zkevm.domain.Constants.LINEA_BLOCK_INTERVAL
 import net.consensys.zkevm.ethereum.coordination.blob.BlobShnarfCalculator
 import net.consensys.zkevm.ethereum.coordination.blob.GoBackedBlobShnarfCalculator
 import kotlin.random.Random
 
-private val shnarfCalculator: BlobShnarfCalculator = GoBackedBlobShnarfCalculator(ShnarfCalculatorVersion.V0_1_0)
+private val meterRegistry = SimpleMeterRegistry()
+private val metricsFacade: MetricsFacade =
+  MicrometerMetricsFacade(registry = meterRegistry, metricsPrefix = "linea")
+private val shnarfCalculator: BlobShnarfCalculator =
+  GoBackedBlobShnarfCalculator(version = ShnarfCalculatorVersion.V0_1_0, metricsFacade = metricsFacade)
 
 fun createBlobRecord(
   startBlockNumber: ULong? = null,
   endBlockNumber: ULong? = null,
   compressedData: ByteArray = Random.nextBytes(32).setFirstByteToZero(),
   blobHash: ByteArray? = null,
-  status: BlobStatus = BlobStatus.COMPRESSION_PROVEN,
   parentStateRootHash: ByteArray? = Random.nextBytes(32).setFirstByteToZero(),
   parentShnarf: ByteArray? = Random.nextBytes(32),
   parentDataHash: ByteArray? = Random.nextBytes(32),
@@ -77,7 +84,6 @@ fun createBlobRecord(
     startBlockTime = _startBlockTime,
     endBlockTime = endBlockTime,
     batchesCount = batchesCount,
-    status = status,
     expectedShnarf = _blobCompressionProof.expectedShnarf,
     blobCompressionProof = _blobCompressionProof
   )
@@ -139,7 +145,6 @@ fun createBlobRecords(
 
 fun createBlobRecordFromBatches(
   batches: List<Batch>,
-  status: BlobStatus = BlobStatus.COMPRESSION_PROVEN,
   blobCompressionProof: BlobCompressionProof? = null
 ): BlobRecord {
   val startBlockNumber = batches.first().startBlockNumber
@@ -156,7 +161,6 @@ fun createBlobRecordFromBatches(
     startBlockTime = startBlockTime,
     endBlockTime = endBlockTime,
     batchesCount = batches.size.toUInt(),
-    status = status,
     expectedShnarf = Random.nextBytes(32),
     blobCompressionProof = blobCompressionProof
   )

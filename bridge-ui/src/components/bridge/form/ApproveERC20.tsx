@@ -24,11 +24,9 @@ export default function Approve() {
   const [watchAmount, watchBalance] = watch(["amount", "balance"]);
 
   // Context
-  const { token, fromChain, tokenBridgeAddress } = useChainStore((state) => ({
-    token: state.token,
-    fromChain: state.fromChain,
-    tokenBridgeAddress: state.tokenBridgeAddress,
-  }));
+  const token = useChainStore((state) => state.token);
+  const fromChain = useChainStore((state) => state.fromChain);
+  const tokenBridgeAddress = useChainStore((state) => state.tokenBridgeAddress);
 
   const { switchChain } = useSwitchNetwork(fromChain?.id);
   const { allowance, refetchAllowance } = useAllowance();
@@ -102,17 +100,8 @@ export default function Approve() {
     if (token) {
       const amount = getValues("amount");
       const amountBigInt = parseUnits(amount, token.decimals);
-      let amountToApprove = amountBigInt;
 
-      if (allowance && allowance > 0n) {
-        if (allowance >= amountBigInt) {
-          amountToApprove = allowance - amountBigInt;
-        } else {
-          amountToApprove = amountBigInt - allowance;
-        }
-      }
-
-      writeApprove(amountToApprove, tokenBridgeAddress);
+      writeApprove(amountBigInt, tokenBridgeAddress);
     }
   };
 

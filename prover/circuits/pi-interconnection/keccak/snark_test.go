@@ -2,6 +2,8 @@ package keccak
 
 import (
 	"fmt"
+	"github.com/consensys/gnark/std/compress"
+	"github.com/consensys/linea-monorepo/prover/circuits/internal/test_utils"
 	"math/big"
 	"testing"
 
@@ -10,7 +12,6 @@ import (
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/test"
-	"github.com/consensys/linea-monorepo/prover/circuits/blobdecompression/v0/compress"
 	"github.com/consensys/linea-monorepo/prover/circuits/internal"
 	"github.com/consensys/linea-monorepo/prover/protocol/wizard"
 	"github.com/consensys/linea-monorepo/prover/utils"
@@ -302,4 +303,11 @@ func (c *testCreateColsBoundaryChecks) Define(api frontend.API) error {
 
 	hsh.createColumns()
 	return nil
+}
+
+func TestPadDirtyLanes(t *testing.T) {
+	test_utils.SnarkFunctionTest(func(api frontend.API) []frontend.Variable {
+		padded, _ := pad(api, []frontend.Variable{1, 0x123456}, 1)
+		return padded
+	}, 1, 0x100000000000000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x80)(t)
 }

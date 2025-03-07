@@ -1,9 +1,10 @@
 "use client";
 
 import { useAccount } from "wagmi";
+import { MdWarning } from "react-icons/md";
 import Bridge from "../bridge/Bridge";
 import { BridgeExternal } from "./BridgeExternal";
-import { useTokenStore } from "@/stores/tokenStore";
+import { useTokenStore } from "@/stores/tokenStoreProvider";
 import { FormProvider, useForm } from "react-hook-form";
 import { BridgeForm } from "@/models";
 import { useChainStore } from "@/stores/chainStore";
@@ -12,7 +13,7 @@ import { TokenType } from "@/config";
 export default function BridgeLayout() {
   const { isConnected } = useAccount();
 
-  const configContextValue = useTokenStore((state) => state.tokensConfig);
+  const configContextValue = useTokenStore((state) => state.tokensList);
   const token = useChainStore((state) => state.token);
 
   const methods = useForm<BridgeForm>({
@@ -30,8 +31,20 @@ export default function BridgeLayout() {
   return (
     <>
       {!isConnected && (
-        <div className="mb-4 min-w-min max-w-lg rounded-lg border-2 border-card bg-cardBg p-2 shadow-lg">
+        <div className="mb-4 min-w-min max-w-lg rounded-lg bg-cardBg p-2 shadow-lg">
           <BridgeExternal />
+        </div>
+      )}
+      {isConnected && token?.type === TokenType.USDC && (
+        <div className="mb-4 min-w-min max-w-lg rounded-lg bg-warning p-2 text-warning-content shadow-lg">
+          <div className="flex flex-col items-center justify-center gap-2 text-center">
+            <MdWarning className="text-lg" />
+            <p>The Linea Sepolia (Testnet) USDC bridge is being upgraded.</p>
+            <p>
+              To bridge USDC between Linea and Ethereum, you can use alternative bridge providers. Linea Mainnet is not
+              effected
+            </p>
+          </div>
         </div>
       )}
       <FormProvider {...methods}>

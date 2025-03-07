@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"text/template"
+
+	"github.com/consensys/linea-monorepo/prover/lib/compressor/blob/dictionary"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-playground/validator/v10"
@@ -69,6 +72,10 @@ func NewConfigFromFile(path string) (*Config, error) {
 	if _, err := os.Stat(srsDir); os.IsNotExist(err) {
 		return nil, fmt.Errorf("kzgsrs directory (%s) does not exist: %w", srsDir, err)
 	}
+
+	// duplicate L2 hardcoded values for PI
+	cfg.PublicInputInterconnection.ChainID = uint64(cfg.Layer2.ChainID)
+	cfg.PublicInputInterconnection.L2MsgServiceAddr = cfg.Layer2.MsgSvcContract
 
 	return &cfg, nil
 }
@@ -205,6 +212,12 @@ type Execution struct {
 
 	// ConflatedTracesDir stores the directory where the conflation traces are stored.
 	ConflatedTracesDir string `mapstructure:"conflated_traces_dir" validate:"required"`
+
+	// IgnoreCompatiblityCheck indicates whether to ignore constaints version checking between
+	// trace files and zkevm.bin constraint files. Specifically, this check ensures that the zkevm.bin file
+	// used within the prover was generated from the same commit of linea-constraints as the generated lt trace file.
+	// Set this to true to disable compatibility checks (default: false).
+	IgnoreCompatibilityCheck bool `mapstructure:"ignore_compatibility_check"`
 }
 
 type BlobDecompression struct {
@@ -212,6 +225,14 @@ type BlobDecompression struct {
 
 	// ProverMode stores the kind of prover to use.
 	ProverMode ProverMode `mapstructure:"prover_mode" validate:"required,oneof=dev full"`
+
+	// DictPaths is an optional parameters allowing the user to specify explicitly
+	// where to look for the compression dictionaries. If the input is not provided
+	// then the dictionary will be fetched in <assets_dir>/<version>/<circuitID>/compression_dict.bin.
+	//
+	// We stress that the feature should not be used in production and should
+	// only be used in E2E testing context. TODO @Tabaie @alexandre.belling revise this warning, seems to no longer apply
+	DictPaths []string `mapstructure:"dict_paths"`
 }
 
 type Aggregation struct {
@@ -225,7 +246,7 @@ type Aggregation struct {
 
 	// AllowedInputs determines the "inner" plonk circuits the "outer" aggregation circuit can aggregate.
 	// Order matters.
-	AllowedInputs []string `mapstructure:"allowed_inputs" validate:"required,dive,oneof=execution-dummy execution execution-large blob-decompression-dummy blob-decompression-v0 blob-decompression-v1"`
+	AllowedInputs []string `mapstructure:"allowed_inputs" validate:"required,dive,oneof=execution-dummy execution execution-large blob-decompression-dummy blob-decompression-v0 blob-decompression-v1 emulation-dummy aggregation emulation public-input-interconnection"`
 
 	// note @gbotrel keeping that around in case we need to support two emulation contract
 	// during a migration.
@@ -252,12 +273,31 @@ func (cfg *WithRequestDir) DirDone() string {
 }
 
 type PublicInput struct {
-	MaxNbDecompression int  `mapstructure:"max_nb_decompression" validate:"gte=0"`
-	MaxNbExecution     int  `mapstructure:"max_nb_execution" validate:"gte=0"`
-	MaxNbCircuits      int  `mapstructure:"max_nb_circuits" validate:"gte=0"` // if not set, will be set to MaxNbDecompression + MaxNbExecution
-	MaxNbKeccakF       int  `mapstructure:"max_nb_keccakf" validate:"gte=0"`
-	ExecutionMaxNbMsg  int  `mapstructure:"execution_max_nb_msg" validate:"gte=0"`
-	L2MsgMerkleDepth   int  `mapstructure:"l2_msg_merkle_depth" validate:"gte=0"`
-	L2MsgMaxNbMerkle   int  `mapstructure:"l2_msg_max_nb_merkle" validate:"gte=0"` // if not explicitly provided (i.e. non-positive) it will be set to maximum
-	MockKeccakWizard   bool // for testing purposes only
+	MaxNbDecompression int `mapstructure:"max_nb_decompression" validate:"gte=0"`
+	MaxNbExecution     int `mapstructure:"max_nb_execution" validate:"gte=0"`
+	MaxNbCircuits      int `mapstructure:"max_nb_circuits" validate:"gte=0"` // if not set, will be set to MaxNbDecompression + MaxNbExecution
+	ExecutionMaxNbMsg  int `mapstructure:"execution_max_nb_msg" validate:"gte=0"`
+	L2MsgMerkleDepth   int `mapstructure:"l2_msg_merkle_depth" validate:"gte=0"`
+	L2MsgMaxNbMerkle   int `mapstructure:"l2_msg_max_nb_merkle" validate:"gte=0"` // if not explicitly provided (i.e. non-positive) it will be set to maximum
+
+	// not serialized
+
+	MockKeccakWizard bool           // for testing purposes only
+	ChainID          uint64         // duplicate from Config
+	L2MsgServiceAddr common.Address // duplicate from Config
+
+}
+
+// BlobDecompressionDictStore returns a decompression dictionary store
+// loaded from paths specified in [BlobDecompression.DictPaths].
+// If no such path is provided, it loads one from the
+// prover assets path depending on the provided circuitID.
+func (cfg *Config) BlobDecompressionDictStore(circuitID string) dictionary.Store {
+
+	paths := cfg.BlobDecompression.DictPaths
+	if len(paths) == 0 {
+		paths = []string{filepath.Join(cfg.PathForSetup(circuitID), DefaultDictionaryFileName)}
+	}
+
+	return dictionary.NewStore(paths...)
 }

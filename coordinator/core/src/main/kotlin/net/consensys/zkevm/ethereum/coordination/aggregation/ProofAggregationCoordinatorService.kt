@@ -2,6 +2,9 @@ package net.consensys.zkevm.ethereum.coordination.aggregation
 
 import io.vertx.core.Vertx
 import kotlinx.datetime.Clock
+import linea.domain.BlockIntervals
+import linea.domain.toBlockIntervalsString
+import net.consensys.linea.metrics.LineaMetricsCategory
 import net.consensys.linea.metrics.MetricsFacade
 import net.consensys.zkevm.LongRunningService
 import net.consensys.zkevm.PeriodicPollingService
@@ -10,10 +13,8 @@ import net.consensys.zkevm.coordinator.clients.ProofAggregationProverClientV2
 import net.consensys.zkevm.domain.Aggregation
 import net.consensys.zkevm.domain.BlobAndBatchCounters
 import net.consensys.zkevm.domain.BlobsToAggregate
-import net.consensys.zkevm.domain.BlockIntervals
 import net.consensys.zkevm.domain.ProofIndex
 import net.consensys.zkevm.domain.ProofsToAggregate
-import net.consensys.zkevm.domain.toBlockIntervalsString
 import net.consensys.zkevm.ethereum.coordination.blockcreation.SafeBlockProvider
 import net.consensys.zkevm.persistence.AggregationsRepository
 import org.apache.logging.log4j.LogManager
@@ -27,6 +28,7 @@ import kotlin.time.Duration
 class ProofAggregationCoordinatorService(
   private val vertx: Vertx,
   private val config: Config,
+  private val metricsFacade: MetricsFacade,
   private var nextBlockNumberToPoll: Long,
   private val aggregationCalculator: AggregationCalculator,
   private val aggregationsRepository: AggregationsRepository,
@@ -46,6 +48,21 @@ class ProofAggregationCoordinatorService(
   )
 
   private val pendingBlobs = ConcurrentLinkedQueue<BlobAndBatchCounters>()
+  private val aggregationSizeInBlocksHistogram = metricsFacade.createHistogram(
+    category = LineaMetricsCategory.AGGREGATION,
+    name = "blocks.size",
+    description = "Number of blocks in each aggregation"
+  )
+  private val aggregationSizeInBatchesHistogram = metricsFacade.createHistogram(
+    category = LineaMetricsCategory.AGGREGATION,
+    name = "batches.size",
+    description = "Number of batches in each aggregation"
+  )
+  private val aggregationSizeInBlobsHistogram = metricsFacade.createHistogram(
+    category = LineaMetricsCategory.AGGREGATION,
+    name = "blobs.size",
+    description = "Number of blobs in each aggregation"
+  )
 
   init {
     aggregationCalculator.onAggregation(this)
@@ -132,6 +149,10 @@ class ProofAggregationCoordinatorService(
       blobCounters.blobCounters.numberOfBatches
     }
 
+    aggregationSizeInBlocksHistogram.record(blobsToAggregate.blocksRange.count().toDouble())
+    aggregationSizeInBatchesHistogram.record(batchCount.toDouble())
+    aggregationSizeInBlobsHistogram.record(compressionBlobs.size.toDouble())
+
     val compressionProofIndexes = compressionBlobs.map {
       ProofIndex(
         startBlockNumber = it.blobCounters.startBlockNumber,
@@ -178,7 +199,6 @@ class ProofAggregationCoordinatorService(
         val aggregation = Aggregation(
           startBlockNumber = blobsToAggregate.startBlockNumber,
           endBlockNumber = blobsToAggregate.endBlockNumber,
-          status = Aggregation.Status.Proven,
           batchCount = batchCount.toULong(),
           aggregationProof = aggregationProof
         )
@@ -251,11 +271,12 @@ class ProofAggregationCoordinatorService(
       )
 
       val proofAggregationService = ProofAggregationCoordinatorService(
-        vertx,
+        vertx = vertx,
         config = Config(
           pollingInterval = aggregationCoordinatorPollingInterval,
           proofsLimit = maxProofsPerAggregation
         ),
+        metricsFacade = metricsFacade,
         nextBlockNumberToPoll = startBlockNumberInclusive.toLong(),
         aggregationCalculator = globalAggregationCalculator,
         aggregationsRepository = aggregationsRepository,

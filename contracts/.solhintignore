@@ -1,2 +1,5 @@
 node_modules
-contracts/test-contracts
+lib/forge-std
+test/foundry
+src/_testing
+src/proxies

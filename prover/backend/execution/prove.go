@@ -6,6 +6,7 @@ import (
 	"github.com/consensys/linea-monorepo/prover/circuits/dummy"
 	"github.com/consensys/linea-monorepo/prover/circuits/execution"
 	"github.com/consensys/linea-monorepo/prover/config"
+	public_input "github.com/consensys/linea-monorepo/prover/public-input"
 	"github.com/consensys/linea-monorepo/prover/utils"
 	"github.com/consensys/linea-monorepo/prover/utils/profiling"
 	"github.com/consensys/linea-monorepo/prover/zkevm"
@@ -13,7 +14,7 @@ import (
 )
 
 type Witness struct {
-	FuncInp *execution.FunctionalPublicInput
+	FuncInp *public_input.Execution
 	ZkEVM   *zkevm.Witness
 }
 
@@ -83,7 +84,7 @@ func mustProveAndPass(
 			// And run the partial-prover with only the main steps. The generated
 			// proof is sanity-checked to ensure that the prover never outputs
 			// invalid proofs.
-			partial := zkevm.FullZkEVMCheckOnly(traces)
+			partial := zkevm.FullZkEVMCheckOnly(traces, cfg)
 			proof := partial.ProveInner(w.ZkEVM)
 			if err := partial.VerifyInner(proof); err != nil {
 				utils.Panic("The prover did not pass: %v", err)
@@ -107,7 +108,7 @@ func mustProveAndPass(
 
 		// Run the full prover to obtain the intermediate proof
 		logrus.Info("Get Full IOP")
-		fullZkEvm := zkevm.FullZkEvm(traces)
+		fullZkEvm := zkevm.FullZkEvm(traces, cfg)
 
 		var (
 			setup       circuits.Setup
@@ -139,18 +140,24 @@ func mustProveAndPass(
 		if err != nil {
 			utils.Panic("could not get the traces checksum from the setup manifest: %v", err)
 		}
+
 		if setupCfgChecksum != traces.Checksum() {
+			// This check is failing on prod but works locally.
+			// @alex: since this is a setup-related constraint, it would likely be
+			// more interesting to directly include that information in the setup
+			// instead of the config. That way we are guaranteed to not pass the
+			// wrong value at runtime.
 			utils.Panic("traces checksum in the setup manifest does not match the one in the config")
 		}
 
 		// TODO: implements the collection of the functional inputs from the prover response
-		return execution.MakeProof(setup, fullZkEvm.WizardIOP, proof, *w.FuncInp), setup.VerifyingKeyDigest()
+		return execution.MakeProof(traces, setup, fullZkEvm.WizardIOP, proof, *w.FuncInp), setup.VerifyingKeyDigest()
 
 	case config.ProverModeBench:
 
 		// Run the full prover to obtain the intermediate proof
 		logrus.Info("Get Full IOP")
-		fullZkEvm := zkevm.FullZkEvm(traces)
+		fullZkEvm := zkevm.FullZkEvm(traces, cfg)
 
 		// Generates the inner-proof and sanity-check it so that we ensure that
 		// the prover nevers outputs invalid proofs.
@@ -164,7 +171,7 @@ func mustProveAndPass(
 
 	case config.ProverModeCheckOnly:
 
-		fullZkEvm := zkevm.FullZkEVMCheckOnly(traces)
+		fullZkEvm := zkevm.FullZkEVMCheckOnly(traces, cfg)
 		// this will panic to alert errors, so there is no need to handle or
 		// sanity-check anything.
 		logrus.Infof("Prover starting the prover")

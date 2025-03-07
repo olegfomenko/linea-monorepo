@@ -1,74 +1,29 @@
 package net.consensys.zkevm.domain
 
 import kotlinx.datetime.Instant
-import net.consensys.isSortedBy
-import net.consensys.linea.CommonDomainFunctions
+import linea.domain.Block
+import linea.domain.BlockInterval
+import linea.domain.CommonDomainFunctions
+import linea.kotlin.isSortedBy
 import net.consensys.linea.traces.TracesCounters
-import net.consensys.zkevm.toULong
-import tech.pegasys.teku.ethereum.executionclient.schema.ExecutionPayloadV1
-
-/**
- * Represents a block interval, with inclusive start and end block numbers
- * @property startBlockNumber start block number, inclusive
- * @property endBlockNumber end block number, inclusive
- */
-interface BlockInterval {
-  val startBlockNumber: ULong
-  val endBlockNumber: ULong
-  val blocksRange: ULongRange
-    get() = startBlockNumber..endBlockNumber
-  fun intervalString(): String = CommonDomainFunctions.blockIntervalString(startBlockNumber, endBlockNumber)
-
-  companion object {
-    fun between(
-      startBlockNumber: ULong,
-      endBlockNumber: ULong
-    ): BlockInterval {
-      return BlockIntervalData(startBlockNumber, endBlockNumber)
-    }
-  }
-}
-
-fun List<BlockInterval>.toBlockIntervalsString(): String {
-  return this.joinToString(
-    separator = ", ",
-    prefix = "[",
-    postfix = "]$size",
-    transform = BlockInterval::intervalString
-  )
-}
-
-fun <T : BlockInterval> List<T>.filterOutWithEndBlockNumberBefore(
-  endBlockNumberInclusive: ULong
-): List<T> {
-  return this.filter { int -> int.endBlockNumber > endBlockNumberInclusive }
-}
-
-fun assertConsecutiveIntervals(intervals: List<BlockInterval>) {
-  require(intervals.isSortedBy { it.startBlockNumber }) { "Intervals must be sorted by startBlockNumber" }
-  require(intervals.zipWithNext().all { (a, b) -> a.endBlockNumber + 1u == b.startBlockNumber }) {
-    "Intervals must be consecutive: intervals=${intervals.toBlockIntervalsString()}"
-  }
-}
 
 data class BlocksConflation(
-  val blocks: List<ExecutionPayloadV1>,
+  val blocks: List<Block>,
   val conflationResult: ConflationCalculationResult
 ) : BlockInterval {
   init {
-    require(blocks.isSortedBy { it.blockNumber }) { "Blocks list must be sorted by blockNumber" }
+    require(blocks.isSortedBy { it.number }) { "Blocks list must be sorted by blockNumber" }
   }
 
   override val startBlockNumber: ULong
-    get() = blocks.first().blockNumber.toULong()
+    get() = blocks.first().number.toULong()
   override val endBlockNumber: ULong
-    get() = blocks.last().blockNumber.toULong()
+    get() = blocks.last().number.toULong()
 }
 
 data class Batch(
   val startBlockNumber: ULong,
-  val endBlockNumber: ULong,
-  val status: Status = Status.Proven
+  val endBlockNumber: ULong
 ) {
   init {
     require(startBlockNumber <= endBlockNumber) {
@@ -85,7 +40,7 @@ data class Batch(
     CommonDomainFunctions.blockIntervalString(startBlockNumber, endBlockNumber)
 
   fun toStringSummary(): String {
-    return "Batch(startBlockNumber=$startBlockNumber, endBlockNumber=$endBlockNumber, status=$status)"
+    return "Batch(startBlockNumber=$startBlockNumber, endBlockNumber=$endBlockNumber)"
   }
 }
 
@@ -117,8 +72,19 @@ data class BlockCounters(
   val blockNumber: ULong,
   val blockTimestamp: Instant,
   val tracesCounters: TracesCounters,
-  val blockRLPEncoded: ByteArray
+  val blockRLPEncoded: ByteArray,
+  val numOfTransactions: UInt = 0u,
+  val gasUsed: ULong = 0uL
 ) {
+
+  override fun toString(): String {
+    return "BlockCounters(blockNumber=$blockNumber, " +
+      "blockTimestamp=$blockTimestamp, " +
+      "tracesCounters=$tracesCounters, " +
+      "blockRLPEncoded=${blockRLPEncoded.size}bytes), " +
+      "numOfTransactions=$numOfTransactions"
+  }
+
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
     if (javaClass != other?.javaClass) return false
@@ -129,8 +95,8 @@ data class BlockCounters(
     if (blockTimestamp != other.blockTimestamp) return false
     if (tracesCounters != other.tracesCounters) return false
     if (!blockRLPEncoded.contentEquals(other.blockRLPEncoded)) return false
-
-    return true
+    if (numOfTransactions != other.numOfTransactions) return false
+    return gasUsed == other.gasUsed
   }
 
   override fun hashCode(): Int {
@@ -138,62 +104,8 @@ data class BlockCounters(
     result = 31 * result + blockTimestamp.hashCode()
     result = 31 * result + tracesCounters.hashCode()
     result = 31 * result + blockRLPEncoded.contentHashCode()
+    result = 31 * result + numOfTransactions.hashCode()
+    result = 31 * result + gasUsed.hashCode()
     return result
   }
-
-  override fun toString(): String {
-    return "BlockCounters(blockNumber=$blockNumber, " +
-      "blockTimestamp=$blockTimestamp, " +
-      "tracesCounters=$tracesCounters, " +
-      "blockRLPEncoded=${blockRLPEncoded.size}bytes)"
-  }
-}
-
-/**
- * Represents a block interval
- * @property startBlockNumber starting block number inclusive
- * @property endBlockNumber ending block number inclusive
- */
-data class BlockIntervalData(
-  override val startBlockNumber: ULong,
-  override val endBlockNumber: ULong
-) : BlockInterval
-
-/**
- * Data class that represents sequential blocks intervals for either Conflations, Blobs or Aggregations.
- * Example:
- *  conflations: [100..110], [111..120], [121..130] --> BlockIntervals(100, [110, 120, 130])
- *  Blobs with
- *   Blob1 2 conflations above: [100..110], [111..120]
- *   Blob2 1 conflations:  [121..130]
- *   --> BlockIntervals(100, [120, 130])
- */
-data class BlockIntervals(
-  val startingBlockNumber: ULong,
-  val upperBoundaries: List<ULong>
-) {
-  // This default constructor is to avoid the parse error when deserializing
-  constructor() : this(0UL, listOf())
-
-  fun toIntervalList(): List<BlockInterval> {
-    var previousBlockNumber = startingBlockNumber
-    val intervals = mutableListOf<BlockInterval>()
-    upperBoundaries.forEach {
-      intervals.add(BlockIntervalData(previousBlockNumber, it))
-      previousBlockNumber = it + 1u
-    }
-    return intervals
-  }
-
-  fun toBlockInterval(): BlockInterval {
-    return BlockIntervalData(startingBlockNumber, upperBoundaries.last())
-  }
-}
-
-fun List<BlockInterval>.toBlockIntervals(): BlockIntervals {
-  require(isNotEmpty()) { "BlockIntervals list must not be empty" }
-  return BlockIntervals(
-    startingBlockNumber = first().startBlockNumber,
-    upperBoundaries = map { it.endBlockNumber }
-  )
 }

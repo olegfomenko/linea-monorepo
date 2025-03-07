@@ -1,9 +1,9 @@
 package net.consensys.linea.ethereum.gaspricing.staticcap
 
-import net.consensys.linea.FeeHistory
+import linea.domain.FeeHistory
+import linea.kotlin.toIntervalString
 import net.consensys.linea.ethereum.gaspricing.FeesFetcher
 import net.consensys.linea.web3j.Web3jBlobExtended
-import net.consensys.toIntervalString
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.web3j.protocol.Web3j
@@ -31,7 +31,7 @@ class FeeHistoryFetcherImpl(
   }
 
   private var cacheIsValidForBlockNumber: BigInteger = BigInteger.ZERO
-  private var feesCache: FeeHistory = getRecentFees().get()
+  private lateinit var feesCache: FeeHistory
 
   private fun getRecentFees(): SafeFuture<FeeHistory> {
     val blockNumberFuture = web3jClient.ethBlockNumber().sendAsync()

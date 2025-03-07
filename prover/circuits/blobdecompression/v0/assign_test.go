@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	v0 "github.com/consensys/linea-monorepo/prover/circuits/blobdecompression/v0"
+	"github.com/consensys/linea-monorepo/prover/lib/compressor/blob/dictionary"
 	"github.com/consensys/linea-monorepo/prover/lib/compressor/blob/v1/test_utils"
 
 	"github.com/consensys/gnark-crypto/ecc"
@@ -22,7 +23,11 @@ import (
 )
 
 func TestBlobV0(t *testing.T) {
-	resp, blobBytes, dict := mustGetTestCompressedData(t)
+	dict := lzss.AugmentDict(test_utils.GetDict(t))
+	dictStore, err := dictionary.SingletonStore(dict, 0)
+	assert.NoError(t, err)
+
+	resp, blobBytes := mustGetTestCompressedData(t, dictStore)
 	circ := v0.Allocate(dict)
 
 	logrus.Infof("Building the constraint system")
@@ -45,7 +50,7 @@ func TestBlobV0(t *testing.T) {
 	givenSnarkHash, err := utils.HexDecodeString(resp.SnarkHash)
 	assert.NoError(t, err)
 
-	a, _, snarkHash, err := blobdecompression.Assign(blobBytes, dict, true, x, y)
+	a, _, snarkHash, err := blobdecompression.Assign(blobBytes, dictStore, true, x, y)
 	assert.NoError(t, err)
 	_, ok := a.(*v0.Circuit)
 	assert.True(t, ok)
@@ -63,9 +68,7 @@ func TestBlobV0(t *testing.T) {
 
 // mustGetTestCompressedData is a test utility function that we use to get
 // actual compressed data from the
-func mustGetTestCompressedData(t *testing.T) (resp blobsubmission.Response, blobBytes []byte, dict []byte) {
-	dict = lzss.AugmentDict(test_utils.GetDict(t))
-
+func mustGetTestCompressedData(t *testing.T, dictStore dictionary.Store) (resp blobsubmission.Response, blobBytes []byte) {
 	respJson, err := os.ReadFile("sample-blob.json")
 	assert.NoError(t, err)
 
@@ -74,7 +77,7 @@ func mustGetTestCompressedData(t *testing.T) (resp blobsubmission.Response, blob
 	blobBytes, err = base64.StdEncoding.DecodeString(resp.CompressedData)
 	assert.NoError(t, err)
 
-	_, _, _, err = blob.DecompressBlob(blobBytes, dict)
+	_, _, _, err = blob.DecompressBlob(blobBytes, dictStore)
 	assert.NoError(t, err)
 
 	return

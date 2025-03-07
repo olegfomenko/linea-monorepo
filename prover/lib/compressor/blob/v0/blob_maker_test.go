@@ -10,10 +10,13 @@ import (
 	"fmt"
 	"io"
 	"math/big"
-	"math/rand"
+	"math/rand/v2"
 	"os"
+	"slices"
 	"testing"
 
+	"github.com/consensys/linea-monorepo/prover/lib/compressor/blob/dictionary"
+	encodeTesting "github.com/consensys/linea-monorepo/prover/lib/compressor/blob/encode/test_utils"
 	"github.com/consensys/linea-monorepo/prover/utils"
 
 	"github.com/consensys/linea-monorepo/prover/lib/compressor/blob/v0/compress/lzss"
@@ -192,7 +195,7 @@ func TestCanWrite(t *testing.T) {
 	cptBlock := 0
 	for i, block := range testBlocks {
 		// get a random from 1 to 5
-		bSize := rand.Intn(3) + 1 // #nosec G404 -- false positive
+		bSize := rand.IntN(3) + 1 // #nosec G404 -- false positive
 
 		if cptBlock > bSize && i%3 == 0 {
 			nbBlocksPerBatch = append(nbBlocksPerBatch, uint16(cptBlock))
@@ -277,7 +280,7 @@ func TestCompressorWithBatches(t *testing.T) {
 	for i, block := range testBlocks {
 		t.Logf("processing block %d over %d", i, len(testBlocks))
 		// get a random from 1 to 5
-		bSize := rand.Intn(5) + 1 // #nosec G404 -- false positive
+		bSize := rand.IntN(5) + 1 // #nosec G404 -- false positive
 
 		if cptBlock > bSize && i%3 == 0 {
 			nbBlocksPerBatch = append(nbBlocksPerBatch, uint16(cptBlock))
@@ -603,7 +606,11 @@ func decompressBlob(b []byte) ([][][]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("can't read dict: %w", err)
 	}
-	header, _, blocks, err := DecompressBlob(b, dict)
+	dictStore, err := dictionary.SingletonStore(dict, 0)
+	if err != nil {
+		return nil, err
+	}
+	header, _, blocks, err := DecompressBlob(b, dictStore)
 	if err != nil {
 		return nil, fmt.Errorf("can't decompress blob: %w", err)
 	}
@@ -720,17 +727,18 @@ func craftExpandingInput(dict []byte, size int) []byte {
 func TestPack(t *testing.T) {
 	assert := require.New(t)
 	var buf bytes.Buffer
+	var rng = rand.New(rand.NewChaCha8([32]byte{}))
 
 	for i := 0; i < 100; i++ {
 		// create 2 random slices
-		n1 := rand.Intn(100) + 1 // #nosec G404 -- false positive
-		n2 := rand.Intn(100) + 1 // #nosec G404 -- false positive
+		n1 := rng.IntN(100) + 1 // #nosec G404 -- false positive
+		n2 := rng.IntN(100) + 1 // #nosec G404 -- false positive
 
 		s1 := make([]byte, n1)
 		s2 := make([]byte, n2)
 
-		rand.Read(s1)
-		rand.Read(s2)
+		utils.ReadPseudoRand(rng, s1)
+		utils.ReadPseudoRand(rng, s2)
 
 		// pack them
 		buf.Reset()
@@ -743,4 +751,19 @@ func TestPack(t *testing.T) {
 		assert.Equal(s1, original[:n1], "slices should match")
 		assert.Equal(s2, original[n1:], "slices should match")
 	}
+}
+
+func TestEncode(t *testing.T) {
+	var block types.Block
+	assert.NoError(t, rlp.DecodeBytes(testBlocks[0], &block))
+	tx := block.Transactions()[0]
+	var bb bytes.Buffer
+	assert.NoError(t, EncodeTxForCompression(tx, &bb))
+
+	var from common.Address
+	txBackData, err := DecodeTxFromUncompressed(bytes.NewReader(slices.Clone(bb.Bytes())), &from)
+	assert.NoError(t, err)
+	txBack := types.NewTx(txBackData)
+
+	encodeTesting.CheckSameTx(t, tx, txBack, from)
 }

@@ -1,5 +1,7 @@
 import "@nomicfoundation/hardhat-toolbox";
+import "@nomicfoundation/hardhat-foundry";
 import "@openzeppelin/hardhat-upgrades";
+import "@nomicfoundation/hardhat-foundry";
 import * as dotenv from "dotenv";
 import "hardhat-deploy";
 import "hardhat-storage-layout";
@@ -11,7 +13,9 @@ import "./scripts/operational/grantContractRolesTask";
 import "./scripts/operational/renounceContractRolesTask";
 import "./scripts/operational/setRateLimitTask";
 import "./scripts/operational/setVerifierAddressTask";
-import "./scripts/operational/transferOwnershipAndSetRemoteTokenBridgeTask";
+import "./scripts/operational/setMessageServiceOnTokenBridgeTask";
+
+import "solidity-docgen";
 
 dotenv.config();
 
@@ -26,39 +30,34 @@ const useViaIR = process.env.ENABLE_VIA_IR === "true";
 const config: HardhatUserConfig = {
   paths: {
     artifacts: "./build",
+    sources: "./src",
   },
   solidity: {
     // NB: double check the autoupdate shell script version complies to the latest solidity version if you add a new one.
     compilers: [
       {
-        version: "0.8.26",
+        version: "0.8.28",
         settings: {
           viaIR: useViaIR,
           optimizer: {
             enabled: true,
-            runs: 50_000,
+            runs: 10_000,
           },
           evmVersion: "cancun",
         },
       },
+      /**
+       * Maintain for Mimc contract
+       * src/libraries/Mimc.sol (0.8.25)
+       * src/libraries/SparseMerkleProof.sol (0.8.25)
+       */
       {
         version: "0.8.25",
         settings: {
           viaIR: useViaIR,
           optimizer: {
             enabled: true,
-            runs: 50_000,
-          },
-          evmVersion: "cancun",
-        },
-      },
-      {
-        version: "0.8.24",
-        settings: {
-          viaIR: useViaIR,
-          optimizer: {
-            enabled: true,
-            runs: 50_000,
+            runs: 10_000,
           },
           evmVersion: "cancun",
         },
@@ -69,7 +68,7 @@ const config: HardhatUserConfig = {
           viaIR: useViaIR,
           optimizer: {
             enabled: true,
-            runs: 50_000,
+            runs: 10_000,
           },
           evmVersion: "london",
         },
@@ -148,6 +147,23 @@ const config: HardhatUserConfig = {
         },
       },
     ],
+  },
+  docgen: {
+    exclude: [
+      "_testing",
+      "bridging/token/utils/StorageFiller39.sol",
+      "bridging/token/CustomBridgedToken.sol",
+      "governance/TimeLock.sol",
+      "security/access/PermissionsManager.sol",
+      "security/reentrancy/TransientStorageReentrancyGuardUpgradeable.sol",
+      "tokens",
+      "verifiers",
+    ],
+    pages: "files",
+    outputDir: "docs/api/",
+    // For compatibility with docs.linea.build
+    pageExtension: ".mdx",
+    templates: "docs/docgen-templates",
   },
 };
 

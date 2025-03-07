@@ -7,17 +7,18 @@ import (
 	cRand "crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
-	"errors"
-	"fmt"
+	"github.com/consensys/linea-monorepo/prover/utils/test_utils"
 	"math/big"
-	"math/rand"
+	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/consensys/linea-monorepo/prover/lib/compressor/blob"
+	"github.com/consensys/linea-monorepo/prover/lib/compressor/blob/dictionary"
+	"github.com/consensys/linea-monorepo/prover/lib/compressor/blob/encode"
+
 	v1 "github.com/consensys/linea-monorepo/prover/lib/compressor/blob/v1"
-	"github.com/consensys/linea-monorepo/prover/lib/compressor/blob/v1/test_utils"
+	v1Testing "github.com/consensys/linea-monorepo/prover/lib/compressor/blob/v1/test_utils"
 
 	fr381 "github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 
@@ -27,15 +28,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/consensys/compress/lzss"
-	"github.com/consensys/gnark-crypto/ecc/bls12-377/fr"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/stretchr/testify/require"
 )
-
-const testDictPath = "../../compressor_dict.bin"
 
 func TestCompressorOneBlock(t *testing.T) { // most basic test just to see if block encoding/decoding works
 	testCompressorSingleSmallBatch(t, testBlocks[1:2])
@@ -57,9 +55,10 @@ func testCompressorSingleSmallBatch(t *testing.T, blocks [][]byte) {
 
 	dict, err := os.ReadFile(testDictPath)
 	assert.NoError(t, err)
-	_, _, blocksBack, err := v1.DecompressBlob(bm.Bytes(), dict)
+	dictStore, err := dictionary.SingletonStore(dict, 1)
+	r, err := v1.DecompressBlob(bm.Bytes(), dictStore)
 	assert.NoError(t, err)
-	assert.Equal(t, len(blocks), len(blocksBack), "number of blocks should match")
+	assert.Equal(t, len(blocks), len(r.Blocks), "number of blocks should match")
 	// TODO compare the blocks
 }
 
@@ -121,7 +120,7 @@ func assertBatchesConsistent(t *testing.T, raw, decoded [][]byte) {
 		var block types.Block
 		assert.NoError(t, rlp.Decode(bytes.NewReader(raw[i]), &block))
 
-		blockBack, err := test_utils.DecodeBlockFromUncompressed(bytes.NewReader(decoded[i]))
+		blockBack, err := v1.DecodeBlockFromUncompressed(bytes.NewReader(decoded[i]))
 		assert.NoError(t, err)
 		assert.Equal(t, block.Time(), blockBack.Timestamp, "block time should match")
 	}
@@ -153,7 +152,7 @@ func TestCanWrite(t *testing.T) {
 	cptBlock := 0
 	for i, block := range testBlocks {
 		// get a random from 1 to 5
-		bSize := rand.Intn(3) + 1 // #nosec G404 -- false positive
+		bSize := rand.IntN(3) + 1 // #nosec G404 -- false positive
 
 		if cptBlock > bSize && i%3 == 0 {
 			nbBlocksPerBatch = append(nbBlocksPerBatch, uint16(cptBlock))
@@ -238,7 +237,7 @@ func TestCompressorWithBatches(t *testing.T) {
 	for i, block := range testBlocks {
 		t.Logf("processing block %d over %d", i, len(testBlocks))
 		// get a random from 1 to 5
-		bSize := rand.Intn(5) + 1 // #nosec G404 -- false positive
+		bSize := rand.IntN(5) + 1 // #nosec G404 -- false positive
 
 		if cptBlock > bSize && i%3 == 0 {
 			nbBlocksPerBatch = append(nbBlocksPerBatch, uint16(cptBlock))
@@ -481,12 +480,12 @@ func BenchmarkWrite(b *testing.B) {
 var testBlocks [][]byte
 
 func init() {
-	rootPath, err := blob.GetRepoRootPath()
+	rootPath, err := test_utils.GetRepoRootPath()
 	if err != nil {
 		panic(err)
 	}
 
-	if testBlocks, err = test_utils.LoadTestBlocks(filepath.Join(rootPath, "testdata/prover-v2/prover-execution/requests")); err != nil {
+	if testBlocks, err = v1Testing.LoadTestBlocks(filepath.Join(rootPath, "testdata/prover-v2/prover-execution/requests")); err != nil {
 		panic(err)
 	}
 
@@ -498,43 +497,6 @@ func init() {
 		f.Write(testBlocks[i])
 	}
 	f.Close()
-}
-
-func decompressBlob(b []byte) ([][][]byte, error) {
-
-	// we should be able to hash the blob with MiMC with no errors;
-	// this is a good indicator that the blob is valid.
-	if len(b)%fr.Bytes != 0 {
-		return nil, errors.New("invalid blob length; not a multiple of 32")
-	}
-
-	dict, err := os.ReadFile(testDictPath)
-	if err != nil {
-		return nil, fmt.Errorf("can't read dict: %w", err)
-	}
-	header, _, blocks, err := v1.DecompressBlob(b, dict)
-	if err != nil {
-		return nil, fmt.Errorf("can't decompress blob: %w", err)
-	}
-
-	batches := make([][][]byte, len(header.BatchSizes))
-	for i, batchNbBytes := range header.BatchSizes {
-		batches[i] = make([][]byte, 0)
-		batchLenYet := 0
-		for batchLenYet < batchNbBytes {
-			batches[i] = append(batches[i], blocks[0])
-			batchLenYet += len(blocks[0])
-			blocks = blocks[1:]
-		}
-		if batchLenYet != batchNbBytes {
-			return nil, errors.New("invalid batch size")
-		}
-	}
-	if len(blocks) != 0 {
-		return nil, errors.New("not all blocks were consumed")
-	}
-
-	return batches, nil
 }
 
 func signTxFake(tx **types.Transaction) {
@@ -641,10 +603,10 @@ func TestPack(t *testing.T) {
 	runTest := func(s1, s2 []byte) {
 		// pack them
 		buf.Reset()
-		written, err := v1.PackAlign(&buf, s1, fr381.Bits-1, v1.WithAdditionalInput(s2))
+		written, err := encode.PackAlign(&buf, s1, fr381.Bits-1, encode.WithAdditionalInput(s2))
 		assert.NoError(err, "pack should not generate an error")
-		assert.Equal(v1.PackAlignSize(len(s1)+len(s2), fr381.Bits-1), int(written), "written bytes should match expected PackAlignSize")
-		original, err := v1.UnpackAlign(buf.Bytes(), fr381.Bits-1, false)
+		assert.Equal(encode.PackAlignSize(len(s1)+len(s2), fr381.Bits-1), int(written), "written bytes should match expected PackAlignSize")
+		original, err := encode.UnpackAlign(buf.Bytes(), fr381.Bits-1, false)
 		assert.NoError(err, "unpack should not generate an error")
 
 		assert.Equal(s1, original[:len(s1)], "slices should match")
@@ -663,8 +625,8 @@ func TestPack(t *testing.T) {
 
 	for i := 0; i < 100; i++ {
 		// create 2 random slices
-		n1 := rand.Intn(100) + 1 // #nosec G404 -- false positive
-		n2 := rand.Intn(100) + 1 // #nosec G404 -- false positive
+		n1 := rand.IntN(100) + 1 // #nosec G404 -- false positive
+		n2 := rand.IntN(100) + 1 // #nosec G404 -- false positive
 
 		s1 := make([]byte, n1)
 		s2 := make([]byte, n2)

@@ -5,6 +5,7 @@ package v1_test
 import (
 	"encoding/base64"
 	"encoding/hex"
+	"github.com/consensys/linea-monorepo/prover/lib/compressor/blob/dictionary"
 	"testing"
 
 	"github.com/consensys/gnark-crypto/ecc"
@@ -27,7 +28,9 @@ func prepareTestBlob(t require.TestingT) (c, a frontend.Circuit) {
 
 func prepare(t require.TestingT, blobBytes []byte) (c *v1.Circuit, a frontend.Circuit) {
 
-	_, payload, _, err := blobcompressorv1.DecompressBlob(blobBytes, blobtestutils.GetDict(t))
+	dictStore, err := dictionary.SingletonStore(blobtestutils.GetDict(t), 1)
+	assert.NoError(t, err)
+	r, err := blobcompressorv1.DecompressBlob(blobBytes, dictStore)
 	assert.NoError(t, err)
 
 	resp, err := blobsubmission.CraftResponse(&blobsubmission.Request{
@@ -47,8 +50,7 @@ func prepare(t require.TestingT, blobBytes []byte) (c *v1.Circuit, a frontend.Ci
 	y.SetBytes(b)
 
 	blobBytes = append(blobBytes, make([]byte, blobcompressorv1.MaxUsableBytes-len(blobBytes))...)
-	dict := blobtestutils.GetDict(t)
-	a, _, snarkHash, err := blobdecompression.Assign(blobBytes, dict, true, x, y)
+	a, _, snarkHash, err := blobdecompression.Assign(blobBytes, dictStore, true, x, y)
 	assert.NoError(t, err)
 
 	_, ok := a.(*v1.Circuit)
@@ -57,9 +59,9 @@ func prepare(t require.TestingT, blobBytes []byte) (c *v1.Circuit, a frontend.Ci
 	assert.Equal(t, resp.SnarkHash[2:], hex.EncodeToString(snarkHash))
 
 	return &v1.Circuit{
-		Dict:                  make([]frontend.Variable, len(dict)),
+		Dict:                  make([]frontend.Variable, len(r.Dict)),
 		BlobBytes:             make([]frontend.Variable, blobcompressorv1.MaxUsableBytes),
-		MaxBlobPayloadNbBytes: len(payload) * 3 / 2, // small max blobcompressorv1 size so it compiles in manageable time
+		MaxBlobPayloadNbBytes: len(r.RawPayload) * 3 / 2, // small max blobcompressorv1 size so it compiles in manageable time
 	}, a
 }
 

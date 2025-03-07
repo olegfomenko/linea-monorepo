@@ -89,6 +89,8 @@ func newECPair(comp *wizard.CompiledIOP, limits *Limits, ecSource *ECPairSource)
 		UnalignedG2MembershipData: newUnalignedG2MembershipData(comp, limits),
 	}
 
+	// IsActive activation - can only go from 1 to {0, 1} and from 0 to 0.
+	res.csIsActiveActivation(comp)
 	// masks and flags are binary
 	res.csBinaryConstraints(comp)
 	// IsActive is only active when we are either pulling or computing in the unaligned submodules
@@ -106,9 +108,14 @@ func newECPair(comp *wizard.CompiledIOP, limits *Limits, ecSource *ECPairSource)
 	res.csInstanceIDChangeWhenNewInstance(comp)
 	res.csAccumulatorInit(comp)
 	res.csAccumulatorConsistency(comp)
+	res.csTotalPairs(comp)
 	res.csLastPairToFinalExp(comp)
 	res.csIndexConsistency(comp)
 	res.csAccumulatorMask(comp)
+	// only Unaligned Pairing data or G2 membership data is active at a time
+	res.csPairingDataOrMembershipActive(comp)
+	// only to Miller loop or to FinalExp
+	res.csExclusivePairingCircuitMasks(comp)
 
 	return res
 }
@@ -219,6 +226,7 @@ func newUnalignedG2MembershipData(comp *wizard.CompiledIOP, limits *Limits) *Una
 //
 // Use [newUnalignedPairingData] to create a new instance of UnalignedPairingData.
 type UnalignedPairingData struct {
+	IsActive          ifaces.Column
 	IsPulling         ifaces.Column
 	IsComputed        ifaces.Column
 	IsAccumulatorInit ifaces.Column
@@ -234,6 +242,7 @@ type UnalignedPairingData struct {
 	ToMillerLoopCircuitMask ifaces.Column
 	ToFinalExpCircuitMask   ifaces.Column
 
+	IsResultOfInstance           ifaces.Column
 	IsFirstLineOfInstance        ifaces.Column
 	IsFirstLineOfPrevAccumulator ifaces.Column
 	IsFirstLineOfCurrAccumulator ifaces.Column
@@ -244,6 +253,7 @@ func newUnalignedPairingData(comp *wizard.CompiledIOP, limits *Limits) *Unaligne
 	createCol := createColFn(comp, namePairingData, size)
 
 	return &UnalignedPairingData{
+		IsActive:                     createCol("IS_ACTIVE"),
 		IsPulling:                    createCol("IS_PULLING"),
 		IsComputed:                   createCol("IS_COMPUTED"),
 		Limb:                         createCol("LIMB"),
@@ -255,6 +265,7 @@ func newUnalignedPairingData(comp *wizard.CompiledIOP, limits *Limits) *Unaligne
 		IsFirstLineOfInstance:        createCol("IS_FIRST_LINE_OF_INSTANCE"),
 		IsFirstLineOfPrevAccumulator: createCol("IS_FIRST_LINE_OF_PREV_ACC"),
 		IsFirstLineOfCurrAccumulator: createCol("IS_FIRST_LINE_OF_CURR_ACC"),
+		IsResultOfInstance:           createCol("IS_RESULT"),
 		IsAccumulatorPrev:            createCol("IS_ACCUMULATOR_PREV"),
 		IsAccumulatorCurr:            createCol("IS_ACCUMULATOR_CURR"),
 		IsAccumulatorInit:            createCol("IS_ACCUMULATOR_INIT"),
